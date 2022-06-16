@@ -26,7 +26,7 @@ The available data structures are as follows; "symbol" represents the name of wh
 * `symbol<>[]{}{}` - Synapse, with an upstream and downstream function (i.e. edge)
 * `symbol<>{}` - Transcription Factor (i.e. decorator, parent class, meta programming)
 * `symbol<>(){}` - Plasmid + RNA Polymerase (i.e. a package)
-* `main(){}` - the entrypoint for running a bio program.
+* `symbol(){}` - executable, the entrypoint for running a bio program.
 
 There are no differences between arrays / lists, maps / dictionaries, sets, etc. In Native Biology Code, items in a Vesicle may be mixed and match to your liking.
 
@@ -35,22 +35,12 @@ If you do not know the type you want ahead of time, you can use `*` in the type 
 `*` is also used after a type to indicate copy-by-value.
 `**` means any time, copied by value.
 
-## Control Flow
-There are only 2 forms of control flow available in Native Biology Code: the `if` statement and the `while` loop + `break` statement.
-
-Control flow statements must be an entire expression and cannot be part of a larger expression. This means they must begin with either `{` or `;` and end with either `;` or `}`.
-
-`if` expressions are defined as `...?{}` and `if...else` expressions are defined as `...?{}{}` where `...` is the condition to check.
-
-`while` loops are defined as `(...){}`, where `...` is the condition to run the loop again.
-Break statements are simply `break`.
-
-Break statements return execution of any `{}` to the caller. Meaning, they may be used to stop regular function calls from running to completion.
-
 ## Syntax
 If an expression has 1 or fewer coding blocks, it will be executed (e.g. `functionCall()` or `functionCall` vs `functionDeclaration()[]{}`).
 All executed statements (i.e. those within a `{}`) must be separated by (i.e. end with) a `;`.
 All items in a `()`, `[]`, or `<>` block must be separated by a `,`.
+
+Symbols may be defined outside of any declaration block. If they are, these symbols may not be changed by any execution block and are effectively static, const, and global.
 
 It is an error to redefine a symbol. `type type` will always be an error. `symbol symbol` is an error when used in isolation, as it will be interpreted as a redefinition of `symbol` to the type which `symbol` defines.
 
@@ -81,6 +71,106 @@ Any symbols which begin with `__` (2 underscores) are compiler defined and may n
 
 Proteins (i.e. functions, or more accurately functors, or even more accurately `()[]{}`) do not have return types. This is to enable multiple and delayed access to returned values.
 If you would like to treat a Protein as a type, you may define a type conversion for the Protein, which will make the syntax appear as a return value in other languages. There's more on that below.
+
+Neurons, specialized Cellular Structures, may be connected via `<>()[]{} --- <>[]{}{} ---> <>()[]{}`, `<>()[]{} <--- <>[]{}{} --- <>()[]{}`, or `<>()[]{} <--- <>[]{}{} ---> <>()[]{}`. Meaning that in a `source --- Synapse ---> target` expression,  a `source` Cellular Structure is connected to a `target` Cellular Structure through a `Synapse`. See Examples below for more info. 
+
+## Control Flow
+There are only 2 forms of control flow available in Native Biology Code: the `if` statement and the `while` loop + `break` statement.
+
+Control flow statements must be an entire expression and cannot be part of a larger expression. This means they must begin with either `{` or `;` and end with either `;` or `}`.
+
+`if` expressions are defined as `...?{}` and `if...else` expressions are defined as `...?{}{}` where `...` is the condition to check.
+
+`while` loops are defined as `(...){}`, where `...` is the condition to run the loop again.
+Break statements are simply `break`.
+
+Break statements return execution of any `{}` to the caller. Meaning, they may be used to stop regular function calls from running to completion.
+
+## What Gets Run
+When running a .bio executable, all standalone execution blocks are combined in the order they are found into one `main(){}` function.
+
+If multiple execution blocks have the same name, only the last is taken in the position in which it is found.
+
+For example:
+```
+//possibly from including an external library
+main()
+{
+    print("this block is shadowed by the main(){} later on");
+}
+
+...
+
+setup()
+{
+    print("setup");
+}
+
+...
+
+main()
+{
+    print("main");
+}
+```
+would output:
+```
+setup
+main
+```
+
+Note that all variables must be declared within the executable's Surface and cannot be declared within the execution block.
+
+Let's create an `example.bio` executable with the contents:
+```
+main
+(
+    toPrint int = 5;
+)
+{
+    //toPrint int = 5; // <--- INVALID. Variables cannot be declared within a {}
+    print(toPrint);
+}
+```
+This allows the program to take arguments: `./example.bio --toPrint=10` would output "10".
+
+When multiple executables have Surfaces, the Surfaces are combined in the order they appear.
+
+Let's make `example2.bio`:
+```
+first
+(
+    name string
+)
+{
+    print("Name: " + name);
+}
+
+second
+(
+    id int
+)
+{
+    print("Id:" + id);
+}
+```
+which is condensed to:
+```
+__main
+(
+    name string,
+    id int
+)
+{
+    print("Name: " + name);
+    print("Id:" + id);
+}
+```
+We can then say `./example2.bio myName 5`, which would output:
+```
+Name: myName
+Id: 5
+```
 
 ## Copy by Reference by Default
 Objects are normally copied by reference and any change to the object will be changed in all locations.
@@ -116,13 +206,6 @@ MyFunction(with int)[internals <>()]
     &"FunctionDefinitions.bio"
 }
 ```
-
-## Asynchronous Cellular Structures and Event Dispatch
-Most execution blocks, such as Proteins, Transcription Factors, and Plasmids run synchronously and immediately in the thread in which they are called.
-
-All Cellular Structures (i.e. `<>()[]{}`) execute their `{}` on a clock. The speed of their oscillation may be set with the built-in value `interval` in milliseconds (e.g. `MyCell<>()[]{interval ++;}`, which would make `MyCell` call its `{}` 1ms slower every time it's called). Cellular Structures do not always run in separate threads. It may be useful to have a Cellular Structure, like a tissue, contain other Cellular Structures and have their oscillations run in a single thread. Other times you may want maximum parallelism which can be accomplished by calling the built-in `fork()` function. All `fork()` does is move the Cellular Structure to a new thread. Note that you can just say `MyCell fork;`, which will expand to `MyCell.fork();`
-
-Synapses are used to send data between asynchronous Cellular Structures. When a Neuron Fires (e.g. `MyNeuron exciteTrigger` is true), all `outgoingSynapses` execute their `upstream` blocks in the calling thread, then execute their `downstream` blocks in the thread they connect to. Synapses may store data Internally inorder to modify the signal sent, including changing whether or not the signal is transmitted to the target at all. A Neuron firing event causes Synapses process all `upstream` execution blocks first, then all `downstream` execution blocks. 
 
 ## Simple Neuron Example
 An example of a Neuron could be:
@@ -191,6 +274,67 @@ source MyNeuron
 target MyNeuron
 ```
 Here, the Synapse declaration is a Type Expression.
+
+## Asynchronous Cellular Structures and Event Dispatch
+Most execution blocks, such as Proteins, Transcription Factors, and Plasmids run synchronously and immediately in the thread in which they are called.
+
+All Cellular Structures (i.e. `<>()[]{}`) execute their `{}` on a clock. The speed of their oscillation may be set with the built-in value `interval` in milliseconds (e.g. `MyCell<>()[]{interval ++;}`, which would make `MyCell` call its `{}` 1ms slower every time it's called). Cellular Structures do not always run in separate threads. It may be useful to have a Cellular Structure, like a tissue, contain other Cellular Structures and have their oscillations run in a single thread. Other times you may want maximum parallelism which can be accomplished by calling the built-in `fork()` function. All `fork()` does is move the Cellular Structure to a new thread. Note that you can just say `MyCell fork;`, which will expand to `MyCell.fork();`
+
+Synapses are used to send data between asynchronous Cellular Structures. When a Neuron Fires (e.g. `MyNeuron exciteTrigger` is true), all `outgoingSynapses` execute their `upstream` blocks in the calling thread, then execute their `downstream` blocks in the thread they connect to. Synapses may store data Internally inorder to modify the signal sent including changing whether or not the signal is transmitted to the target at all. A Neuron firing event causes Synapses process all `upstream` execution blocks first, then all `downstream` execution blocks.
+
+The `--- Synapse --->` (and thus `<--- Synapse --->` and `<--- Synapse ---`) method, which adds an outgoing connection from the source and an incoming connection to the target may be overridden with the following methods:
+```
+MyCustomClass
+<>
+(
+    //Override outgoing functionality for all Synapses
+    --- (outgoing <>[]{}{})[]
+    {
+        //YOUR CODE HERE
+    }
+    
+    //Override incoming functionality for all Synapses
+    <--- (incoming <>[]{}{})[]
+    {
+        //YOUR CODE HERE
+    }
+)
+[]
+{}
+```
+
+This allows you to define custom overrides for your specific types as well:
+```
+MySynapse <>
+[
+    //by defining members, we change the shape of the type, making it possible to target only the classes we want.
+    custom string
+]
+{
+    //...
+}
+{
+    //...
+}
+
+MyNeuron
+<>
+(
+    //Override outgoing functionality only for MySynapse
+    --- (outgoing MySynapse)[]
+    {
+        //YOUR CODE HERE
+    }
+    
+    //Override incoming functionality only for MySynapse
+    <--- (incoming MySynapse)[]
+    {
+        //YOUR CODE HERE
+    }
+)
+[]
+{}
+```
 
 ## Type Expressions
 Type Expressions can be substituted for full types the same way defined symbols can be treated as types.
@@ -272,8 +416,13 @@ CatTF< AnimalTF >
     object.noise = "Meow";
 }
 
-cat < CatTF > ()[]{}
-cat.makeNoise();
+main
+(
+    cat < CatTF > ()[]{}
+)
+{
+    cat.makeNoise();
+}
 ```
 Now, we can define any number of Animals through Transcription Factor dependencies and any change in the `AnimalTF` "base class" will be applied to all Animals.
 
@@ -351,10 +500,15 @@ KittenTF<>
     //From KittenTF
     object.noise = "mew";
 }
-kitten <KittenTF>()[]{}
-kitten.makeNoise();
+
+main
+(
+    kitten <KittenTF>()[]{}
+)
+{
+    kitten.makeNoise();
+}
 ```
-We will come back to this example after we expand on how execution happens.
 
 ## Initialization
 There are several means by which you might create a constructor. Destructors do not exist in Native Biology Code but can likewise be accomplished by having a caller call some destructor method.
@@ -422,27 +576,31 @@ Which prints the expected "mew".
 Another way we can create a constructor or destructor is through a Surface definition.
 We can say:
 ```
-kitten < Kitten >
+main
 (
-    constructor ()[]
-    {
-        makeNoise()
-    },
-    destructor ()[]
-    {
-        explode()
-    }
+    kitten < Kitten >
+    (
+        constructor ()[]
+        {
+            makeNoise()
+        },
+        destructor ()[]
+        {
+            explode()
+        }
+    )
+    [
+        explode ()[]
+        {
+            print("BOOM!");
+        }
+    ]
+    {}
 )
-[
-    explode ()[]
-    {
-        print("BOOM!");
-    }
-]
-{}
-
-kitten.consturctor();
-kitten.destructor();
+{
+    kitten.consturctor();
+    kitten.destructor();
+}
 ```
 Now, the caller can construct and destruct our `kitten`.
 
@@ -499,11 +657,18 @@ Note that `Position`, when used in the type expression defining `Package` refere
 ## Function Arguments
 Arguments may be provided by order or by symbol specification. For example, consider:
 ```
-add(first int, second int, result int)[]{result = first + second;}
-three int = add(1, 2).result;
-three int = add(1, second = 2);
-three int; add(1, 2, three);
-three int; add(1, 2, result = three);
+add(first int, second int, result int)[]{result = first + second;},
+
+main
+(
+    three int
+)
+{
+    three = add(1, 2).result;
+    three = add(1, second = 2);
+    add(1, 2, three);
+    add(1, 2, result = three);
+}
 ```
 All of these are valid ways to use the `add` Protein.
 
@@ -547,15 +712,18 @@ sort(array <>())
     index = 0;
     (true) //while loop
     {
-        array[index] > array[index+1] ?
+        //index + 1 must have spaces and expands to index.+(1)
+        //The following becomes: array[index].>(array[index.+(1)]).bool ? ...
+        
+        array[index] > array[index + 1] ?
         {
             buffer = array[index];
-            array[index+1] = array[index];
-            array[index+1] = buffer;        
+            array[index + 1] = array[index]; 
+            array[index + 1] = buffer;        
         };
         
         index ++; // note the space after "index", making the expression expand to index.++().
-        index == array size ? {break}; 
+        index == array size - 1 ? {break}; 
     };
 }
 
@@ -564,19 +732,22 @@ Pair <>
     name string,
     value int,
     
-    //Type Conversions (for predefined ">" operation)
-    int value
+    int value //Type Conversions (for predefined ">" operation)
 )
 
-heterogeneosuMap <>
+main
 (
-    var1 Pair = ("One", 1),
-    var3 Pair = ("Three", 3),
-    var4 int = 4,
-    var2 Pair = ("Two", 2)
+    heterogeneosuMap <>
+    (
+        var1 Pair = ("One", 1),
+        var3 Pair = ("Three", 3),
+        var4 int = 4,
+        var2 Pair = ("Two", 2)
+    )
 )
-
-sort(heterogeneosuMap);
+{
+    sort(heterogeneosuMap);
+}
 ```
 This will result in `heterogeneosuMap` being rearranged as:
 ```
