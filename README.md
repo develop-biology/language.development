@@ -251,27 +251,37 @@ source MyNeuron --- MySynapse ---> target MyNeuron
 ```
 Alternatively, we can declare our variables ahead of time:
 ```
-source MyNeuron
-target MyNeuron
-synapse MySynapse
-source --- synapse ---> target
+main
+(
+    source MyNeuron,
+    target MyNeuron,
+    synapse MySynapse
+)
+{
+    source --- synapse ---> target
+}
 ```
 Alternatively, if we wanted to define our Synapse only using TFs, we could:
 ```
-source MyNeuron
----
-[]{}{}
-<
-    all,
-    of,
-    these,
-    //but,
-    //not these
-    transcription,
-    factors
->
---->
-target MyNeuron
+main
+(
+    source MyNeuron,
+    target MyNeuron
+)
+{
+    source ---
+        []{}{}
+        <
+            all,
+            of,
+            these,
+            //but,
+            //not these
+            transcription,
+            factors
+        >
+    ---> target
+}
 ```
 Here, the Synapse declaration is a Type Expression.
 
@@ -335,6 +345,9 @@ MyNeuron
 []
 {}
 ```
+
+### Rounding Error Protection
+When a value is accessed by a Synapse through `upstream` or `downstream`, the value is marked as a Neurotransmitter and will be Reset() by the Biology framework every time the number of Synapses affecting the value drops to 0.
 
 ## Type Expressions
 Type Expressions can be substituted for full types the same way defined symbols can be treated as types.
