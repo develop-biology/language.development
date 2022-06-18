@@ -15,7 +15,14 @@ The blocks used are:
 * `""` - Strings
 * `/**/` - Comments & Documentation
 
+### Block Precedence
+Blocks may have different precedence depending on the context in which they are found. However, in general:
+1. `<>` Type blocks are processed first, before any other block.
+2. `[]` Internal blocks have higher precedence than Surfaces.
+3. `()` Surfaces are processed before execution.
+4. `{}` Execution is processed last, after the code has been "compiled".
 
+Non coding blocks (`/**/` and `""`) are never processed (but strings (`""`) when not used as blocks  are always processed).
 ## Types
 Different data structures are defined by which blocks they possess. At minimum, a definition must have 2 or more coding (i.e. non-string, non-comment) blocks.
 The available data structures are as follows; "symbol" represents the name of whatever the expression defines:
@@ -59,7 +66,7 @@ You may execute expressions in declaration blocks (`()` and `[]`) and type block
 * include single-block expressions (i.e. `functionCalls()` or `indexAccess[]`) and
 * do not contain spaces (i.e. none of the `symbol symbol` autofill logic is enabled in declaration blocks).
 
-There is no `this`, `self`, etc. all unprefaced symbols in an execution block are prefaced with the current object to which the execution block belongs. If no such symbol can be found, the symbol which defines the containing execution block will be searched and so on until all contexts are exhausted. It is an error if a symbol is not found in any execution block leading to the current expression.
+There is no `this`, `self`, etc. all unprefaced symbols in an execution block are prefaced with the current object to which the execution block belongs. If no such symbol can be found, the symbol which defines the containing execution block will be searched and so on until all contexts are exhausted. It is an error if a symbol is not found in any execution block leading to the current expression. See Symbol Resolution, below for more info.
 
 Members defined within an object's `[]` will only be searched within that object's `{}`. No other object within or without shall have access to an object's Internal members. The only exception to this is Transcription Factors, which have access to any `[]` they can reach.
 
@@ -75,7 +82,10 @@ If you would like to treat a Protein as a type, you may define a type conversion
 Neurons, specialized Cellular Structures, may be connected via `<>()[]{} --- <>[]{}{} ---> <>()[]{}`, `<>()[]{} <--- <>[]{}{} --- <>()[]{}`, or `<>()[]{} <--- <>[]{}{} ---> <>()[]{}`. Meaning that in a `source --- Synapse ---> target` expression,  a `source` Cellular Structure is connected to a `target` Cellular Structure through a `Synapse`. See Examples below for more info. 
 
 ## Control Flow
-There are only 2 forms of control flow available in Native Biology Code: the `if` statement and the `while` loop + `break` statement.
+There are only 3 forms of control flow available in Native Biology Code: 
+* `if` expressions
+* `while` loops
++ `break` statements
 
 Control flow statements must be an entire expression and cannot be part of a larger expression. This means they must begin with either `{` or `;` and end with either `;` or `}`.
 
@@ -85,6 +95,8 @@ Control flow statements must be an entire expression and cannot be part of a lar
 Break statements are simply `break`.
 
 Break statements return execution of any `{}` to the caller. Meaning, they may be used to stop regular function calls from running to completion.
+
+There are no native `for` or `foreach` loops because the `[#]` syntax has no type enforcement. For... loops must be built with the language, rather than be a part of its core.
 
 ## What Gets Run
 When running a .bio executable, all standalone execution blocks are combined in the order they are found into one `main(){}` function.
@@ -189,6 +201,113 @@ Here, `first` and `second` are copied by value and will remain a part of the `ad
 ## Garbage Collection
 When an object has no references, it is deleted. This is handled through the `chemical::` `solution` system in the underlying C++.
 
+## Function Arguments
+Arguments may be provided by order or by symbol specification. For example, consider:
+```
+add(first int, second int, result int)[]{result = first + second;},
+
+main
+(
+    three int
+)
+{
+    three = add(1, 2).result;
+    three = add(1, second = 2);
+    add(1, 2, three);
+    add(1, 2, result = three);
+}
+```
+All of these are valid ways to use the `add` Protein.
+
+Note that we can treat `add` as if it had a return value with:
+```
+add
+(
+    first int,
+    second int,
+    result int,
+    
+    //"return value" See the section on Type Conversion, below, for more info.
+    int result
+)
+[]
+{
+    result = first + second;
+}
+```
+Now, we can say `three int = add(1, 2)`, without needing to specify `.result`.
+
+Here's another example:
+```
+sort(array <>())
+[
+    index int,
+    buffer * //we want buffer to be any type, so we mark it as "*", which allows us to set the type and value later with "=".
+]
+{
+    array size <= 1 ? {break};
+    
+    //the above statement is dense.
+    //array size expands to array.size(), which gives the number of Surfaces in a Vesicle or Cellular Structure (and may be overriden).
+    //the rest of the if condition expands to: array.size().<=(int).
+    //the Native Biology Code interpreter will check array.size() for an int conversion, which exists, and thus will call: array.size().int.<=(int).
+    //the if statement then reads ...int.<=(int).bool 
+    //the if statement (i.e. condition ? {true case};) does not require the word "if" nor parenthasese and is terminated with a ";", just like every other expression.
+    //because "break" is the last (and only) expression in the if execution block, it does not need to end with a ";".
+    //"break" ends the function, returning control to the caller.
+    
+    index = 0;
+    (true) //while loop
+    {
+        //index + 1 must have spaces and expands to index.+(1)
+        //The following becomes: array[index].>(array[index.+(1)]).bool ? ...
+        
+        array[index] > array[index + 1] ?
+        {
+            buffer = array[index];
+            array[index + 1] = array[index]; 
+            array[index + 1] = buffer;        
+        };
+        
+        index ++; // note the space after "index", making the expression expand to index.++().
+        index == array size - 1 ? {break}; 
+    };
+}
+
+Pair <>
+(
+    name string,
+    value int,
+    
+    int value //Type Conversions (for predefined ">" operation)
+)
+
+main
+(
+    heterogeneosuMap <>
+    (
+        var1 Pair = ("One", 1),
+        var3 Pair = ("Three", 3),
+        var4 int = 4,
+        var2 Pair = ("Two", 2)
+    )
+)
+{
+    sort(heterogeneosuMap);
+}
+```
+This will result in `heterogeneosuMap` being rearranged as:
+```
+heterogeneosuMap <>
+(
+    var1 Pair = ("One", 1),
+    var2 Pair = ("Two", 2)
+    var3 Pair = ("Three", 3),
+    var4 int = 4,
+)
+```
+This works on `heterogeneosuMap` with a mixture of Pairs and int(s) just as it would on any data which can be represented as an array of ints. Note that the int requirement only exists because of the `int.>(int)` call, which only takes ints. If we had a map consisting of custom types which implemented `> (other CustomType)[]{}`, this would work just as well.
+
 ## File Inclusion
 
 `&"/path/to/file.bio"` will include all the contents of the specified file in the exact location the `&` statement occurs in.
@@ -206,6 +325,102 @@ MyFunction(with int)[internals <>()]
     &"FunctionDefinitions.bio"
 }
 ```
+
+## Symbol Resolution
+
+### Execution Blocks
+When an execution block looks up a symbol, it begins with the Internal members of the object it is operating within, if there are any. Next, the Surfaces of the object (if there are any) are checked. If a symbol is not found within the `[]` or `()` of an object, the Surfaces of the containing executing object, if one exists, are searched recursively until a match is found. If no match is found within the declared variables leading to the currently executing expression, the global context is searched as read-only. Write operations on globally declared objects are forbidden.
+
+This has 2 important implications:
+1. Variables may be context defined and, unlike other languages, do not always need to be explicitly supplied to the currently executing context.
+2. Symbols defined closer to the point of execution take precedence over those defined farther away.
+
+To illustrate the first point, consider the function:
+```
+addImplementation()[]
+{
+    result = first + second;
+}
+```
+This code is valid only in a context like this:
+```
+add
+(
+    first int = 1,
+    second int = 2
+    result int
+)
+[
+    //NOTE: none of first, second, nor result can be Internal as 
+    //  Internal symbols are only accessible from the matching execution block, 
+    //  not the sub-execution blocks contained within.
+]
+{
+    addImplementation
+}
+```
+Here, `addImplementation` sets the value of the `add` Protein's `result` using its `first` and `second` surfaces.
+
+This makes it possible to "pass" the caller transparently to other execution blocks, the same way `this` is passed transparently to C++ methods.
+
+Note that there is no way to access a callers methods by number. You cannot say `[0] + [1]`, as this notation explicitly references the Surfaces of the current object and will never reference the Surfaces of a greater context. If you would like access to the Surfaces of the caller without referencing them by name, you must have the caller pass the relevant symbols to the current object's Surfaces.
+For example:
+```
+addImplementation
+(
+    toAdd *
+)
+[]
+{
+    result = toAdd[0] + toAdd[1];
+}
+add
+(
+    values <>(int)
+    result int
+)
+[]
+{
+    addImplementation values
+}
+```
+
+To illustrate the second point, consider what would happen if `addImplementation` defined `result`:
+```
+addImplementation
+(
+    toAdd *,
+    result int // <--- result will no longer affect the caller's member.
+)
+[]
+{
+    result = toAdd[0] + toAdd[1];
+}
+```
+By moving the `result` variable closer to its use in `addImplementation`, we more rigorously define what `addImplementation` can do and thus must treat it differently. `add` must become:
+```
+add
+(
+    values <>()
+    result int
+)
+[]
+{
+    result = addImplementation(values).result
+}
+```
+
+### Function Arguments
+Symbol resolution is more strict in function arguments, i.e. `(name = value)`. Here, `name` must exist on the object's Surface.
+
+### Type Blocks
+In Type blocks `<>`, the names used must be valid, predefined objects of the single expected type. 
+For all objects besides Plasmids, the expected type is a Transcription Factor. For Plasmids, the expected type is another Plasmid.
+
+When declaring both Plasmids and Transcription Factors, the Type block specifies the object's dependencies but has no direct effect on the object. When a dependency is declared in a Plasmid, it only signifies that some of the Transcription Factors the Plasmid defines are dependent on those from the specified Plasmid. When a dependency is declared in a Transcription Factor, not only does the dependency have to be declared first, the dependency's execution block is copied into the top of the dependent Transcription Factor's.
+
+Because symbols may only be redefined within a more specific context, global declarations of Plasmids and Transcription Factors will always generate errors if a Symbol is duplicated. This is preferred.
+
 
 ## Simple Neuron Example
 An example of a Neuron could be:
@@ -327,7 +542,7 @@ MySynapse <>
     //...
 }
 
-MyNeuron
+MyOtherNeuron
 <>
 (
     //Override outgoing functionality only for MySynapse
@@ -357,6 +572,23 @@ Consider the above example:
 source MyNeuron --- MySynapse ---> target MyNeuron
 ```
 Since we have no need to modify `MySynapse` after we create it, we do not have to give the `MySynapse` type a name.
+
+When declaring a type for the purposes of type-matching, the `<>`, `[]`, and `()` blocks may be left empty, as they are not needed to check if an object has the necessary Surfaces. Thus the following is valid:
+```
+doSomethingWith(myNeuron (input int, output int)<>[]{})
+[]
+{
+    myNeuron.input = 5;
+}
+
+main(myNeuron MyNeuron)
+{
+    doSomethingWith(myNeuron);
+}
+```
+Even though `MyNeuron` is `<neuron> (input int, output int) [gain int = 1] {output = gain * input;}`, it can be used anywhere `(input int, output int)<>[]{}` can. It doesn't matter if the `neuron` Transcription Factor adds or changes members, as long as the type used with `doSomethingWith` is `()<>[]{}` and defines the `input int` and `output int` Surfaces, it's valid.
+
+Aside: All types must have names.
 
 ## Meta Programming and Inheritance
 There is no inheritance in Native Biology Code. This might be surprising considering how much inheritance is (ab)used in the C++ code underpinning the language. We believe it is cleaner and less error-prone to use a simple meta-programming along with native code rearrangement through self-reflection.
@@ -666,110 +898,3 @@ InventoryNumber<>
 ```
 Now, our `InventoryNumber` can be treated directly as a `Position` and even passed in place of a `TrackPackage` function call (i.e. `InventoryNumber(someInt).result` discards the provided int and provides its own `Position` as the `result`).
 Note that `Position`, when used in the type expression defining `Package` references the `Position` Surface of `InventoryNumber` and not the `Position` type. If an object does not define a symbol and that symbol can't be found on the Surfaces of containing objects, it is an error. Thus, we cannot say `Package GetPackage(GetPackage).result` because `InventoryType` cannot be treated as a `GetPackage` Protein.
-
-## Function Arguments
-Arguments may be provided by order or by symbol specification. For example, consider:
-```
-add(first int, second int, result int)[]{result = first + second;},
-
-main
-(
-    three int
-)
-{
-    three = add(1, 2).result;
-    three = add(1, second = 2);
-    add(1, 2, three);
-    add(1, 2, result = three);
-}
-```
-All of these are valid ways to use the `add` Protein.
-
-Note that we can treat `add` as if it had a return value with:
-```
-add
-(
-    first int,
-    second int,
-    result int,
-    
-    //return value
-    int result
-)
-[]
-{
-    result = first + second;
-}
-```
-Now, we can say `three int = add(1, 2)`, without needing to specify `.result`.
-
-Here's another example:
-```
-sort(array <>())
-[
-    index int,
-    buffer * //we want buffer to be any type, so we mark it as "*", which allows us to set the type and value later with "=".
-]
-{
-    array size <= 1 ? {break};
-    
-    //the above statement is dense.
-    //array size expands to array.size(), which gives the number of Surfaces in a Vesicle or Cellular Structure (and may be overriden).
-    //the rest of the if condition expands to: array.size().<=(int).
-    //the Native Biology Code interpreter will check array.size() for an int conversion, which exists, and thus will call: array.size().int.<=(int).
-    //the if statement then reads ...int.<=(int).bool 
-    //the if statement (i.e. condition ? {true case};) does not require the word "if" nor parenthasese and is terminated with a ";", just like every other expression.
-    //because "break" is the last (and only) expression in the if execution block, it does not need to end with a ";".
-    //"break" ends the function, returning control to the caller.
-    
-    index = 0;
-    (true) //while loop
-    {
-        //index + 1 must have spaces and expands to index.+(1)
-        //The following becomes: array[index].>(array[index.+(1)]).bool ? ...
-        
-        array[index] > array[index + 1] ?
-        {
-            buffer = array[index];
-            array[index + 1] = array[index]; 
-            array[index + 1] = buffer;        
-        };
-        
-        index ++; // note the space after "index", making the expression expand to index.++().
-        index == array size - 1 ? {break}; 
-    };
-}
-
-Pair <>
-(
-    name string,
-    value int,
-    
-    int value //Type Conversions (for predefined ">" operation)
-)
-
-main
-(
-    heterogeneosuMap <>
-    (
-        var1 Pair = ("One", 1),
-        var3 Pair = ("Three", 3),
-        var4 int = 4,
-        var2 Pair = ("Two", 2)
-    )
-)
-{
-    sort(heterogeneosuMap);
-}
-```
-This will result in `heterogeneosuMap` being rearranged as:
-```
-heterogeneosuMap <>
-(
-    var1 Pair = ("One", 1),
-    var2 Pair = ("Two", 2)
-    var3 Pair = ("Three", 3),
-    var4 int = 4,
-)
-```
-This works on `heterogeneosuMap` with a mixture of Pairs and int(s) just as it would on any data which can be represented as an array of ints. Note that the int requirement only exists because of the `int.>(int)` call, which only takes ints. If we had a map consisting of custom types which implemented `> (other CustomType)[]{}`, this would work just as well.
