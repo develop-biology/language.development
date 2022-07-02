@@ -473,7 +473,10 @@ main
     synapse MySynapse
 )
 {
+    synapse --- SomeOtherSynapse ---> source
     source --- synapse ---> target
+    source --- synapse2 ---> target
+    source --- synapse3 ---> target
 }
 ```
 Alternatively, if we wanted to define our Synapse only using TFs, we could:
@@ -590,6 +593,80 @@ Even though `MyNeuron` is `<neuron> (input int, output int) [gain int = 1] {outp
 
 Aside: All types must have names.
 
+### Type Perturbation
+Type Expressions may be modified ad nauseam using the `&...` syntax where `...` is any block besides strings (`&""` is only used for file inclusion). You are also allowed to join types together by symbol.
+
+For example, we can define an `InputNeuron` and an `OutputNeuron` which combine to form `MyNeuron`. Using Type Perturbation, we can do this without Transcription Factors:
+```
+InputNeuron <neuron>
+/*
+    A Neuron with an input
+*/
+(
+    input int
+)
+[]
+{}
+
+OutputNeuron <neuron>
+/*
+    A Neuron with an output
+*/
+(
+    output int
+)
+[]
+{}
+
+MyNeuron InputNeuron &OutputNeuron &
+/*
+    A Neuron with gain control
+*/
+//NOTE: No () block even though MyNeuron is a <>()[]{}
+[
+    gain int = 1
+]
+{
+    //output from OutputNeuron.
+    output = gain * input;
+}
+```
+
+How the Type Perturbation mechanic works is by combining the contents of duplicate blocks on a first-in first-out bases and then removing duplicates from the end.
+
+Our `MyNeuron` thus has an intermediate state similar to the following:
+```
+MyNeuron 
+<
+    neuron, //from InputNeuron
+    neuron //from OutputNeuron; this one will be removed.
+>
+/*
+    A Neuron with an input
+    A Neuron with an output
+    A Neuron with gain control
+*/
+(
+    input int,
+    output int
+)
+[
+    gain int = 1
+]
+{
+    //output from OutputNeuron.
+    output = gain * input;
+}
+```
+
+This is useful when you want to build onto a type that was previously defined elsewhere without using Transcription Factors.
+
+Type Perturbations do not afford any changing of variables; you will necessarily need to use Transcription Factors for that.
+
+Additionally, Type Perturbations get more confusing when duplicate blocks exist in the type definition, such as with Synapses (`<>[]{}{}`). In order to add to the second `{}`, you must provide 2 `{}` blocks: `PerturbedSynapse MySynapse &{}{/*added to downstream block*/}` vs `PerturbedSynapse MySynapse &{/*only added to upstream block*/}`.
+
+Type Perturbation only moves in one direction: toward complexity. You cannot directly simplify objects by Perturbing them (but you can indirectly by adding on a Transcription Factor which simplifies the object).
+
 ## Meta Programming and Inheritance
 There is no inheritance in Native Biology Code. This might be surprising considering how much inheritance is (ab)used in the C++ code underpinning the language. We believe it is cleaner and less error-prone to use a simple meta-programming along with native code rearrangement through self-reflection.
 
@@ -613,6 +690,13 @@ The line `object.{} += someExecutionStatement(newVar, newSurface);` appends a ne
 The last line of this example uses the syntax `object.{}.someOtherFunction ...` which addresses all instances of `someOtherFunction` within the object's execution block. This does not affect `someOtherFunction` in any other object.
 
 You are also allowed to modify comments and strings through these same mechanics. `object./**/ += "New documentation";` is valid.
+
+You may remove a line-item from an object using the built-in `__remove()` method.
+For expample:
+* `object.__remove(symbol)`
+* `object.[].__remove(symbol)`
+* `object.{}.__remove(expression)`
+* `object.subobject.[].__remove(symbol)`
 
 ### Composition
 The easiest way to reuse the code you've written is through composition. Let's take the `someOtherFunction` example from above and assume you wrote:
