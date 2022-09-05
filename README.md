@@ -265,7 +265,7 @@ sort(array <>())
         array[index] > array[index + 1] ?
         {
             buffer = array[index];
-            array[index + 1] = array[index]; 
+            array[index] = array[index + 1]; 
             array[index + 1] = buffer;        
         };
         
