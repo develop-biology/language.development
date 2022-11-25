@@ -2,6 +2,8 @@
 
 This repo describes the Eons Language of Development specification and provides interpreters where appropriate.
 
+The goal of this language is to provide a concise but powerful means of describing data and operations at any scale. The same syntax for iterating over memory addresses in an embedded should be the same syntax for iterating over servers in a network. 
+
 The Eons Language of Development is the emulsifier between the practical applications developed on the [Eons Python Library](https://github.com/eons-dev/lib_eons) and the powerful, but largely theoretical concepts created by the [Eons Develop Biology library](https://github.com/develop-biology/lib_bio). 
 
  The Develop Biology Library (aka Biology) provides the basics for creating a directed, recursive hypergraph. In short, this means data of any dimension ("hyper") flows ("directed") through a network ("graph") of connected nodes, where each connection and node may be graphs unto themselves ("recursive").
@@ -13,7 +15,6 @@ Through the combination of these frameworks, we can blur the lines of what it me
 From this abstract vantage point, we may rethink what it means for a language to be 'functional' vs 'object oriented' and much more. We will now turn our focus to the language we have developed to wrap our complex theories into something practical: Eons Language of Development.
 
 ## Interpreters
-
 Coming soon!  
 This language will have several interpreters, the most important of which will be defined here as a `bio::chemical::Axis` for use with Eons Develop Biology.
 
@@ -26,23 +27,38 @@ We recommend snake_case for all variable and function names.
 Eons Language of Development is almost like an object-oriented lisp variant and relies heavily on the meaning of different braces instead of keywords.
 
 The Blocks used are:
-* `()` - Parameter: used to define and bind Surfaces.
+* `##` - Comment: used for docs & non-evaluated sections of code.
+* `''` - String: used for strings.
 * `[]` - Container: used to manage repeated elements.
 * `{}` - Execution: used to define and evaluate functions.
+* `()` - Parameter: used to define and bind Surfaces.
 * `<>` - Type: used for inheritance and meta programming.
-* `''` - String: used for strings.
-* `##` - Comment: used for docs & non-evaluated sections of code.
 
 These Block structures are strictly enforced to enable consistency (i.e. there are no other supported Comment Blocks, etc.)
 
-### Block Precedence
-Blocks may have different precedence depending on the context in which they are found. However, in general:
-1. `[]` Container Blocks are processed first, before any other Block.
-2. `<>` Type Blocks are processed before Parameter Blocks.
-3. `()` Parameters are processed before Execution.
-4. `{}` Execution is processed last, after the code has been interpreted.
+Each Block is allowed to change how symbols are interpreted within it. For example, the Comment Block does not execute code, and adding "{}" inside a string does not define an Execution Block
 
 String and Comment Blocks (`''`, `##`) are considered "non-coding" while all other Blocks are considered "coding".
+Type and Execution Blocks are considered "instantiating" while Parameter and Container Blocks are considered "describing"
+
+### Block Precedence
+Blocks are interpreted in the following order:
+1. `''` String Blocks are processed first.
+2. `##` Comment Blocks precede all coding blocks.
+3. `[]` Container Blocks are the first coding Block to be processed, allowing them the most dramatic code changes.
+4. `{}` Execution Blocks must be processed before Type Blocks.
+5. `()` Parameters are processed after Execution.
+6. `<>` Type Blocks are processed last to allow alternative interpretations of `<` and `>`.
+
+### The Need for Containers
+Containers are the Eons way of cramming multiple values into a single symbol. We don't support `*args` or numerous variations on the set. All we provide is a "many" notation.
+
+To expand a container, you can use an empty `[]` after the container symbol.
+For example:
+```
+my_container = ["a", "b", "c"]
+my_container[] # expands to "a", "b", "c" #
+```
 
 ## Types
 There is only one type in the Eons Language of Development: the Functor (Protein in Biology).
@@ -52,7 +68,7 @@ All data structures, functions, etc. can be mutated into each other.
 Types are written as `my_object<my_type>`.
 For example:
 ```
-animal
+animal<>
 (
     legs <int>
     color <> # <- empty type is okay #
@@ -63,7 +79,7 @@ cow <animal>
 }
 ```
 
-There are no differences between arrays / lists, maps / dictionaries, sets, etc. In Eons Language of Development, items in a Container may be mixed and match to your liking. If you would like to enforce type checking, create a specialized Functor which defines your addition operators (e.g. `+` and `+=`).
+There are no differences between arrays / lists, maps / dictionaries, sets, etc. In Eons Language of Development, items in a Container may be mixed and match to your liking. If you would like to enforce type checking, create a specialized Functor which defines your addition Operators (e.g. `+` and `+=`).
 
 If you do not know the type you want ahead of time, just leave the `<>` empty. You can always add and change types later.
 
@@ -72,39 +88,52 @@ Functors (Proteins) can take multiple inputs and give multiple outputs. Because 
 
 You'll see plenty of examples of this throughout this spec.
 
-## Symbols
-The Eons Language of Development does not use any keywords; all information necessary to interpret code is presented as symbols. This means that any words are user defined and not part of the built in language.
+## Operators
+The Eons Language of Development does not use any keywords; all information necessary to interpret code is presented as Operators. This means that any words are user defined and not part of the built in language.
 
-The symbols used are:
-* `,`, `;`, `\n` - End.
+The Operators used are:
+* `,`, `;`, `\n` (newline) - End.
 * `.` - Access, also referred to as spatial separation.
-* `\` - Sequence, also referred to as temporal separation.
+* `\` - Exit & Sequence, also referred to as temporal separation.
 * `?` - Condition
 * `&` - And
 * `|` - Or
 
-The space is a dynamic symbol that is filled in depending on the context of where it is found.
+The space is a dynamic Operator that is filled in depending on the context of where it is found. See the [Spacing Autofill rules](#spacing-autofill), below.
 
-Besides those for Blocks, these are the only symbols used by the Eons Language of Development. All other symbols (e.g. `+`, `-`, `*`, `/`, `%`, etc.) are all user defined and can be changed as thou wilt.
+Besides those for Blocks, these are the only characters used by the Eons Language of Development. All other symbols (e.g. `+`, `-`, `*`, `/`, `%`, etc.) are all user defined and can be changed as thou wilt.
 
 You may also override `<` and `>` for comparisons (and thus `<=`, `>=`, etc.). See [Declaration and Evaluation](#declaration-and-evaluation), below, for more info.
 
+### Exiting and Returns
+The Exit Operator exits the current Execution Block, whatever that may be.
+
+`\var` returns `var`, exiting the current Execution Block.
+To exit without returning anything, simply `\;` (or use any appropriate line ending).
+
+You can also type `return` in place of `\`. Though be aware that `return` can be overridden (e.g. maybe you want to log all values provided by all Functors).
+
+### Escaping
+Still use `\` to escape other characters.
+
+**You should only ever need to escape characters within a string** (e.g. `my_\n_var` is not a valid variable name). Because String Blocks are non-coding, this is fine. Within a string, `\` will not be interpreted as a Sequence, so we maintain it as the escape character.
+
 ### Line Endings and Code Separation
-Code may be separated by any End symbol. All are equally valid in all contexts.
-End symbols are not necessary where a Block terminator is present. For example, `[my,list]` does not need to be `[my,list,]` because the `]` separates the code from whatever may follow.
+Code may be separated by any End Operator. All are equally valid in all contexts.
+End Operators are not necessary where a Block terminator is present. For example, `[my,list]` does not need to be `[my,list,]` because the `]` separates the code from whatever may follow.
 
 ### Access and Spatial Separation
 `this` is the keyword for the current scope.
 
-The access operator (`.`) is used in increasing order of scope, similar to how domain names are `subdomain.domain.top-level-domain`.
+The access Operator (`.`) is used in increasing order of scope, similar to how domain names are `subdomain.domain.top-level-domain`.
 This ordering is reversed, as compared to most other programming languages, but should be familiar, as it's how we all handle URLs and file extensions. The benefit of this order is that you only need to append what is absolutely necessary and the most important scope is immediately apparent, when read from left to right.
 
 In the Eons Language of Development, this increase in scope allows us to easily access variables defined in encapsulating spaces (Vesicles or Solvents, in Biology).
 For example:
 ```
-my_class
+my_class<>
 (
-    constructor(name string)
+    constructor(name<string>)
     {
         #
         'this' comes after name to indicate the greater context to which 'name' belongs
@@ -130,7 +159,7 @@ Spatial separation also applies to competing parent scopes. Say you have a class
 Eons Python Library allows you to specify the precedence of spatial scopes with Fetch. That behavior needs to be ported to Biology.
 
 ### Sequences, Synapses, and Temporal Separation
-Sequences enable tasks to be accomplished dynamically: the same set of instructions can yield two different results when executed in different orders. Sequences are created using the Sequence operator (`\`). They implicitly execute each step along their path and make the previous Steps methods and members available to the subsequent Steps. **Only the last step in a sequence is returned.** Please note that, as with all executions, the **whole** Step object is returned so that any part of it may be accessed.
+Sequences enable tasks to be accomplished dynamically: the same set of instructions can yield two different results when executed in different orders. Sequences are created using the Sequence Operator (`\`). They implicitly execute each step along their path and make the previous Steps methods and members available to the subsequent Steps. **Only the last step in a sequence is returned.** Please note that, as with all executions, the **whole** Step object is returned so that any part of it may be accessed.
 
 The Eons Python Library calls this system of Sequences ["Implicit Inheritance"](https://github.com/eons-dev/lib_eons#implicit-inheritance).
 
@@ -139,6 +168,9 @@ For example, `find\my\scarf` calls the `find` Functor's Execution Block, then ma
 You can use Sequences anywhere you could evaluate an expression (they are one and the same).
 
 Note that Sequences read left to right as they build upon each other: `first\second\third`.
+
+#### Returning a Sequence
+If you prepend a Sequence with the Exit Operator (e.g. `\find\my\scarf`), the Sequence will be evaluated and the last Step will be returned from the current Execution Block.
 
 ### Merging Spacetime
 You can create spatial constructs using temporal sequences by wrapping them in a type block. Because the whole Functor from the final step in a sequence is returned and that Functor contains the members and methods of what came before it, you can simply set this functor as the parent of the object you're creating. When called from a Type Block, a Sequence will only merge the Execution Blocks of each Step, it will not execute them. 
@@ -152,30 +184,135 @@ For example, `find\[my,your]\scarf` would execute `find\my\scarf` and `find\your
 
 If the Functors you execute are configured to run in different threads, these jobs will be executed in parallel.
 
-## Declaration and Evaluation
+You can also achieve this same functionality by defining the asynchronous behavior in the execution block of your Functor. For example:
+```
+custom_async(to_execute)
+{
+    custom_thread_engine\to_execute[]
+}
+find\custom_async([my,your])\scarf
+```
 
-Symbols are defined when the `<>` block is used. However, both `<` and `>` may be used in evaluated expressions as comparison. The different between the Type Block and the less than & greater than symbols is that the latter are always preceded by `?`, `&`, or `|`. 
+## Declaration
+Symbols are defined when either the Type Block (`<>`) or Execution Block are used.
+
+You cannot change the `<>` nor `{}` without redefining the symbol!
+
+This means `my_class()` will execute the `my_class` symbol defined elsewhere. Whereas, `my_class<>()` is a declaration and will not execute any code. The same is true for `my_function()` vs `my_function(){}`. Note as well that `my_class(){}` and `my_function<>()` are valid declarations (you can use this when combining functions, e.g. `combined_function<do_first, do_second>(extra_arg<>)`).
+
+However, both `<` and `>` may be used in evaluated expressions as comparisons. The difference between the Type Block and the less than & greater than symbols is that the latter are always followed by `?`, `&`, or `|`. 
 
 **It if forbidden to declare or change types in a comparison statement**. That's how we solve that problem.
 
-## Syntax
-If an expression has 1 or fewer coding Blocks, it will be executed (e.g. `functionCall()` or `functionCall` vs `functionDeclaration()[]{}`).
-All executed statements (i.e. those within a `{}`) must be separated by (i.e. end with) a `;`.
-All items in a `()`, `[]`, or `<>` Block must be separated by a `,`.
+## Execution
+If an expression lacks `<>` or `{}`, it will be executed (e.g. `function_call()` or `function_call` vs `function_declaration(){}`).
+All executed statements (i.e. those within a `{}`) must be separated by a valid line ending (`,`, `;`, or `\n`).
 
-Symbols may be defined outside of any declaration Block. If they are, these symbols may not be changed by any execution Block and are effectively static, const, and global.
+Redefining a symbol changes the existing symbol for all future execution. Meaning, `symbol symbol{do_this_instead}` will change the behavior of `symbol`. However, `symbol symbol`, without a Type nor Execution Block will be executed per the Spacing Autofill rules below.
 
-It is an error to redefine a symbol. `type type` will always be an error. `symbol symbol` is an error when used in isolation, as it will be interpreted as a redefinition of `symbol` to the type which `symbol` defines.
+### Spacing Autofill
+These rules apply to any set of symbols separated by spaces:
+* The last symbol is always wrapped by a `()` for the previous symbol.
+* If there is only one symbol, it is as if an empty `()` is appended to the end of it.
+* If there are many symbols separated by spaces, for all but the last, the order is inverted and they are joined by `.`s.
 
-However, `symbol symbol` may be valid when used as a part of a larger, executed expression. These rules are applied depending on the types of the left-hand statement (LHS) and the right-hand statement (RHS):
-* If LHS is a Protein and there is no RHS, an empty `()` is appended to the end of the function call.
+This means we can define `+` as a custom function in an object and say `a + b`, which becomes `+.a(b)`. We can also do `a unary add something.b`, which becomes `add.unary.a(something.b)`. Note that `a + b` is NOT the same as `a+b`; the latter is a single symbol, e.g. `a+b<parent_class>(arg<>){do_stuff}`.
+
+## Type Casting
+A type may be treated as another type if it defines the target type as a member variable.
+
+Type casting happens implicitly whenever a function argument is declared to have a type.
+Type casting happens explicitly whenever the type member is accessed.
+
+For example:
+```
+inventory_number<>
+(
+    tracking_id<int>
+    
+    # Make inventory_number castable to an int #
+    int<traking_id>
+    
+    #
+    The above could also be written as:
+    int{\tracking_id}
+    or 
+    int{return tracking_id}
+    #
+)
+
+ship(number<int>)
+{
+    ...
+}
+
+some_item<inventory_number>
+
+ship some_item
+#
+This line calls ship(int.some_item), which returns the tracking_id from the inventory_number parent
+#
+```
+
+## Control Flow
+There are 3 forms of control flow available in Eons Language of Development: 
+* `if` & `if else` statements
+* `foreach` loop
+* `while` loop
+
+The `if` statement is defined as `...?{}` and the `if else` statement is defined as `...?{}{}`, where `...` is the condition to check.
+Note that the `?` will always cast the preceding statement to `bool`. It is an error if `bool.my_type` returns an `int`, etc.
+
+The `while` loop is defined as `(...){}`, where `...` is the condition to run the loop again. Like `if` statements, `while` loops will cast their condition to `bool`.
+To exit a while loop, use the Exit Operator (`\`). You may also return a value from a `while` loop with `\var_to_return`. You may also type `break` in place of `\` but be aware that the behavior of `break` can be overridden.
+
+The `foreach` loop is defined as `container[iterator]{action}`, where `container` is the Container to iterate over (previously defined by `[some, set]`) and  `iterator` is the symbol to use within `action` to represent the current item in the `container`. To enable type checking in a foreach loop, simply specify a Type Block after the iterator name.
+For example,
+```
+my_list = ["a","b","c", 1, 2, 3]
+
+# Foreach loop, using [iterator<type>]{...} #
+my_list[letter<string>]
+{
+    print letter
+}
+```
+would likely print "abc" (depending on the implementation of `print` and assuming `string` hasn't been hacked to identify numbers, etc.)
+
+## Container Comprehension
+A Container can be expanded into its constituents by appending `[]`. You can further restrict this behavior by specifying a Type Block and / or a Parameter Block within the Container Block.
+For example,
+```
+color<>
+(
+    name <>
+)
+dog<>
+(
+    name <string>
+)
+
+my_colors_and_dogs = [color(name='red'), color(anme='blue'), '#00FF00', dog(name='red')]
+
+my_colors_and_dogs[<color>] # gives [color(name='red'), color(name='blue')] #
+my_colors_and_dogs[(name='red')] # gives [color(name='red'), dog(name='red')] #
+my_colors_and_dogs[<dog>(name='red')] # gives [dog(name='red')] #
+```
+
+
+
+These rules are applied depending on the number of symbols separated
+* If there is no RHS, an empty `()` is appended to the end of the function call (e.g. `func;` becomes `func();`)
+* If there are multiple symbols se
 * If LHS is a Protein and RHS is a Vesicle or Cellular Structure, a wrapping `()` is applied to the RHS.
 * If LHS is a Protein and RHS is also a Protein which is defined as a Surface on the LHS, a `.` is added to replace the whitespace between the symbols.
 * If LHS is a Protein and RHS is also a Protein which takes at least 1 argument and is not defined on the Surface of the LHS, the LHS will be type-casted to the type of the first argument of RHS (e.g. `add(1,2) > 3` becomes `add(1,2).int.>(3)`). This may result in an error if the type-cast fails or if the type-casted LHS does not implement RHS on its Surface.
 * It is an error if LHS is a Protein and RHS is also a Protein which takes no arguments and is not defined on the Surface of the LHS.
 * If the LHS is a Vesicle or Cellular Structure and the RHS is a Protein, Vesicle, or Cellular Structure, a `.` is added to replace the whitespace between the symbols.
 
-Thus, consecutive symbols become expressions in a right to left manner to automatically fill in function calls and member access. This means we can define `+` as a custom function in an object and say `a + b`, which becomes `a.+(b)`. It is an error if the LHS is a Vesicle or Cellular Structure and does not define the given symbol or if the LHS is a Protein which does not have a Surface of the RHS type and the RHS cannot be converted to a type the LHS takes (see below for more on type conversion).
+Thus, consecutive symbols become expressions in a right to left manner to automatically fill in function calls and member access. 
+
+ It is an error if the LHS is a Vesicle or Cellular Structure and does not define the given symbol or if the LHS is a Protein which does not have a Surface of the RHS type and the RHS cannot be converted to a type the LHS takes (see below for more on type conversion).
 
 You cannot declare variables in an execution Block (`{}`).  
 You may execute expressions in declaration Blocks (`()` and `[]`) and type Blocks (`<>`), provided that they:
@@ -186,7 +323,7 @@ Members defined within an object's `[]` will only be searched within that object
 
 It is an error if a member is declared in both a `()` and `[]`. The same symbol can be used in a `<>` as in either `()` or `[]`, since the meaning of `<>` is dependent on the object to which it applies and will never be used for member definition.
 
-Surfaces may be accessed by their name or simply by their index using the `[]` operator in an executable expression. Index operators take either a numeric position (e.g. `[0]`) or a string corresponding to a Surface or Internal member name (e.g. `['myVar']`).
+Surfaces may be accessed by their name or simply by their index using the `[]` Operator in an executable expression. Index Operators take either a numeric position (e.g. `[0]`) or a string corresponding to a Surface or Internal member name (e.g. `['myVar']`).
 
 Any symbols which begin with `__` (2 underscores) are compiler defined and may not be changed. It is illegal for your variables to begin with underscores.
 
@@ -195,22 +332,6 @@ If you would like to treat a Protein as a type, you may define a type conversion
 
 Neurons, specialized Cellular Structures, may be connected via `<>()[]{} --- <>[]{}{} ---> <>()[]{}`, `<>()[]{} <--- <>[]{}{} --- <>()[]{}`, or `<>()[]{} <--- <>[]{}{} ---> <>()[]{}`. Meaning that in a `source --- Synapse ---> target` expression,  a `source` Cellular Structure is connected to a `target` Cellular Structure through a `Synapse`. See Examples below for more info. 
 
-## Control Flow
-There are only 3 forms of control flow available in Eons Language of Development: 
-* `if` expressions
-* `while` loops
-+ `break` statements
-
-Control flow statements must be an entire expression and cannot be part of a larger expression. This means they must begin with either `{` or `;` and end with either `;` or `}`.
-
-`if` expressions are defined as `...?{}` and `if...else` expressions are defined as `...?{}{}` where `...` is the condition to check.
-
-`while` loops are defined as `(...){}`, where `...` is the condition to run the loop again.
-Break statements are simply `break`.
-
-Break statements return execution of any `{}` to the caller. Meaning, they may be used to stop regular function calls from running to completion.
-
-There are no native `for` or `foreach` loops because the `[#]` syntax has no type enforcement. For... loops must be built with the language, rather than be a part of its core.
 
 ## What Gets Run
 When running a .bio executable, all standalone execution Blocks are combined in the order they are found into one `main(){}` function.
@@ -1060,39 +1181,3 @@ MyCell<>
 ```
 
 Note that we cannot include spaces in expressions used in declaration Blocks, so `GetSurfaceFor 'MyCell' GetSurfaceFor 'MyCell' = GetSurfaceFor 'MyCell'` is invalid and will generate an error.
-
-## Type Conversion and Casting
-A type may be treated as another type if it defines the target type on its Surface.
-For example:
-```
-InventoryNumber<>
-(
-    int trakingId
-)
-[
-    trackingId int
-]
-{}
-```
-When a function like `1 + InventoryNumber` is called, the expression is interpreted as `1.+(InventoryNumber.int)`, since `1`, being an `int` expects an `int` in its `+` method. `InventoryNumber.int` then produces `InventoryNumber.trackingId`.
-This works for any type.
-```
-Package< SomePackageImplementation >[](){}
-
-TrackPackage(trackingId int, result Position)[track SomePackageTrackingImplementation]{result = track(trackingId).result;}
-
-GetPackage(Position where, result Package)[get SomePositionLookupImplementation]{result = get(position).result;}
-
-InventoryNumber<>
-(
-    int trakingId,
-    Position TrackPackage(trackingId).position,
-    Package GetPackage(Position).result
-)
-[
-    trackingId int
-]
-{}
-```
-Now, our `InventoryNumber` can be treated directly as a `Position` and even passed in place of a `TrackPackage` function call (i.e. `InventoryNumber(someInt).result` discards the provided int and provides its own `Position` as the `result`).
-Note that `Position`, when used in the type expression defining `Package` references the `Position` Surface of `InventoryNumber` and not the `Position` type. If an object does not define a symbol and that symbol can't be found on the Surfaces of containing objects, it is an error. Thus, we cannot say `Package GetPackage(GetPackage).result` because `InventoryType` cannot be treated as a `GetPackage` Protein.
