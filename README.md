@@ -2,7 +2,7 @@
 
 This repo describes the Eons Language of Development specification and provides interpreters where appropriate.
 
-The goal of this language is to provide a concise but powerful means of describing data and operations at any scale. The same syntax for iterating over memory addresses in an embedded should be the same syntax for iterating over servers in a network. 
+The goal of this language is to provide a concise but powerful means of describing data and operations at any scale. The syntax for iterating over memory addresses in an embedded system should be the same syntax for iterating over servers in a network. 
 
 The Eons Language of Development is the emulsifier between the practical applications developed on the [Eons Python Library](https://github.com/eons-dev/lib_eons) and the powerful, but largely theoretical concepts created by the [Eons Develop Biology library](https://github.com/develop-biology/lib_bio). 
 
@@ -87,7 +87,12 @@ my_container[] # expands to "a", "b", "c" #
 ```
 
 #### Container Expansion
-Container expansion is done dynamically, depending on what other symbols are adjacent to the container
+Container expansion is done dynamically, depending on what other symbols are adjacent to the Container.
+In general, whatever symbol follows the Container will be expanded as a foreach loop of the given operation.
+
+For example, `[1,2]*[3,4]` should yield `[3,4,6,8]`, while `3 + [first, second].my_object` should be equivalent to `3 + first.my_object; 3 + second.my_object`.
+
+You'll see more of this throughout this spec.
 
 ## Types
 There is only one type in the Eons Language of Development: the Functor (Protein in Biology).
@@ -162,10 +167,8 @@ Still use `\` to escape other characters.
 Code may be separated by any End Operator. All are equally valid in all contexts, except the newline End (`\n`), which may be used to terminate Comment Blocks.
 End Operators are not necessary where a Block terminator is present. For example, `[my,list]` does not need to be `[my,list,]` because the `]` separates the code from whatever may follow.
 
-
-
 ### Access and Spatial Separation
-`this` is the keyword for the current scope.
+The Sigil Operator is used to reference both the current object (`$`) and the calling object (`$$`). However, it can only do this when it's not used as a prefix for another symbol.
 
 The access Operator (`.`) is used in increasing order of scope, similar to how domain names are `subdomain.domain.top-level-domain`.
 This ordering is reversed, as compared to most other programming languages, but should be familiar, as it's how we all handle URLs and file extensions. The benefit of this order is that you only need to append what is absolutely necessary and the most important scope is immediately apparent, when read from left to right.
@@ -178,16 +181,16 @@ my_class<>
     constructor(name<string>)
     {
         #
-        'this' comes after name to indicate the greater context to which 'name' belongs
-        it is also necessary to specify 'name.this', since the local context overrides the parameter.
+        '$' comes after name to indicate the greater context to which 'name' belongs
+        it is also necessary to specify 'name.$', since the local context overrides the parameter.
         #
-        name.this = name
+        name.$ = name
     }
     
     say_hi()
     {
         #
-        here, there is no other context to which 'name' could belong beside 'this', so no additional specification is necessary.
+        here, there is no other context to which 'name' could belong beside '$', so no additional specification is necessary.
         however, additional specificity does not hurt.
         #
         print name
@@ -239,7 +242,7 @@ find\custom_async([my,your])\scarf
 Objects are normally copied by reference and any change to the object will be changed in all locations.
 These changes are thread-safe by default and may wait on other threads.
 
-However, if you would like to copy an object by value (possibly for non-Blocking or destructive access to the object), use the Sigil Operator (`$`) to indicate such in the type declaration or whenever you access the object. Using `$` will make a copy of the given object for use within the current Execution Block. Using `$` multiple times in the same Execution Block only creates 1 local copy; however, applying the Sigil Operator to multiple Execution Blocks creates a new copy for each.
+However, if you would like to copy an object by value (possibly for non-Blocking or destructive access to the object), prefix the Sigil Operator (`$`) to the variable in the variable declaration or whenever you access the object. Using `$` as a prefix will make a copy of the given object for use within the current Execution Block. Using `$` multiple times in the same Execution Block only creates 1 local copy; however, applying the Sigil Operator in multiple Execution Blocks creates a new copy for each.
 
 For example:
 ```
@@ -253,6 +256,21 @@ Here, `first` and `second` are copied by value and will remain a part of the `ad
 
 #### Garbage Collection
 When an object has no references, it is deleted.  
+
+#### Accessing the Current and Calling Objects
+Other languages use `this` or `self` to indicate the current object. The Eons Language of Development uses a standalone `$`.
+
+Additionally, 2 Sigil Operators (`$$`) indicates the calling Functor.
+When one Functor calls another, the caller is made available to the callee through `$$`. In this way, `$` is very similar to `./` in Unix filesystems while `$$` is similar to `../`; in this same manner, 2 callers up would be `$$.$$`, the same way 2 paths up is `../../`.
+
+To demonstrate the difference between `$` as a copy by value indication and `$` as a reference to the current object, consider the example above rewritten more explicitly:
+```
+add($first <int>, second <int>, result <int>)
+{
+    result.$ = first.$ + $second.$
+    @ result.$
+}
+```
 
 ## Declaration
 Symbols are defined when either the Type Block (`<>`) or Execution Block are used.
@@ -372,7 +390,30 @@ However, by convention, `constructor()` is called at the top of a Functor's Exec
 
 Think of the lifecycle of your Functor as existing entirely within it's Execution Block. Every time the Functor is called, it is as if its instantiated anew. You are allowed to cache things between these instantiations but doing so prevents you from destroying them. If you have hardware or even a whole cloud compute cluster that needs to be initialized before your logic, it is highly recommended that you do so in the calling scope and pass the necessary resources to your Functor. Doing this allows the calling scope to tear down those resources when all is done.
 
+## Public, Protected, and Private
+By default all members are `public`. However, you can mark members as `protected` or `private` by simply calling the appropriate Functor.
+For example,
+```
+my_class<>
+(
+    public_member <>
+
+    protected(
+        protected_member <>
+    )
+
+    private(
+        private_member <>
+    )
+)
+```
+
+These Functors are not built in and can be overridden. Likewise, they can be extended; you are welcome to create your own access control statements.
+This pattern operates by executing Functors within the Parameter Block. As a result, we can add members to the caller after some modification. In this case, the `protected` and `private` modifications make it such that any access to members provided becomes restricted to either the `my_class` object and its children or to only the `my_class` object, respectively.
+
 ## Some Examples
+
+### Calling Add
 ```
 add(first <int>, second <int>, return <int>)
 {
@@ -395,92 +436,76 @@ main(three <int>)
 }
 ```
 
-Note that we can treat `add` as if it had a return value with:
+### Sorting a Container
 ```
-add
+sort
 (
-    first int,
-    second int,
-    result int,
-    
-    //'return value' See the section on Type Conversion, below, for more info.
-    int result
-)
-[]
-{
-    result = first + second;
-}
-```
-Now, we can say `three int = add(1, 2)`, without needing to specify `.result`.
+    array <> # Note that we copy by reference, not value.
 
-Here's another example:
-```
-sort(array <>())
-[
-    index int,
-    buffer * //we want buffer to be any type, so we mark it as '*', which allows us to set the type and value later with '='.
-]
+    private(
+        index int,
+        buffer <> # we want buffer to be any type, so we mark it as '<>'
+    )
+
 {
-    array size <= 1 ? {break};
+    array size <= 1 ? {@}
     
-    //the above statement is dense.
-    //array size expands to array.size(), which gives the number of Surfaces in a Vesicle or Cellular Structure (and may be overriden).
-    //the rest of the if condition expands to: array.size().<=(int).
-    //the Eons Language of Development interpreter will check array.size() for an int conversion, which exists, and thus will call: array.size().int.<=(int).
-    //the if statement then reads ...int.<=(int).bool 
-    //the if statement (i.e. condition ? {true case};) does not require the word 'if' nor parenthasese and is terminated with a ';', just like every other expression.
-    //because 'break' is the last (and only) expression in the if execution Block, it does not need to end with a ';'.
-    //'break' ends the function, returning control to the caller.
-    
-    index = 0;
-    (true) //while loop
+    #
+    Dhe above statement is dense.
+    'array size <= 1' expands to <=.size.array(1),
+    Presumably, 'size.array' is an int which gives the number of members in the array Functor (i.e. the number of Surfaces on the Protein).
+    The <= Functor would then be defined in the 'int' object.
+    The if statement then reads bool.<=.int(int), which should provide the value of return.<=.int(int) as a bool (which it likely already is).
+    The Exit Operator (@) is then called if the above bool is true, ending the execution.
+    #
+
+    index = 0
+    (true) # while loop
     {
-        //index + 1 must have spaces and expands to index.+(1)
-        //The following becomes: array[index].>(array[index.+(1)]).bool ? ...
+        # index + 1 must have spaces and expands to +.index(1)
+        # The following becomes: bool.>.array[index](array[+.index(1)]) ? ...
         
         array[index] > array[index + 1] ?
         {
-            buffer = array[index];
-            array[index] = array[index + 1]; 
-            array[index + 1] = buffer;        
-        };
+            buffer = array[index]
+            array[index] = array[index + 1]
+            array[index + 1] = buffer   
+        }
         
-        index ++; // note the space after 'index', making the expression expand to index.++().
-        index == array size - 1 ? {break}; 
+        index ++ # note the space after 'index', making the expression expand to ++.index().
+        index == array size - 1 ? {@@}
     };
 }
 
-Pair <>
+pair <>
 (
-    name string,
-    value int,
+    name <string>
+    value <int>
     
-    int value //Type Conversions (for predefined '>' operation)
+    int <value> # Type Conversion (for predefined '>' operation)
 )
 
 main
 (
-    heterogeneosuMap <>
-    (
-        var1 Pair = ('One', 1),
-        var3 Pair = ('Three', 3),
-        var4 int = 4,
-        var2 Pair = ('Two', 2)
-    )
+    heterogeneosu_map <> = [
+        var1 <pair>('One', 1)
+        var3 <pair>('Three', 3)
+        var4 <int>(4)
+        var2 <pair>('Two', 2)
+    ]
 )
 {
-    sort(heterogeneosuMap);
+    sort(heterogeneosu_map);
 }
 ```
-This will result in `heterogeneosuMap` being rearranged as:
+This will result in `heterogeneosu_map` being rearranged as:
 ```
-heterogeneosuMap <>
-(
+[
     var1 Pair = ('One', 1),
     var2 Pair = ('Two', 2)
     var3 Pair = ('Three', 3),
     var4 int = 4,
-)
+]
 ```
-This works on `heterogeneosuMap` with a mixture of Pairs and int(s) just as it would on any data which can be represented as an array of ints. Note that the int requirement only exists because of the `int.>(int)` call, which only takes ints. If we had a map consisting of custom types which implemented `> (other CustomType)[]{}`, this would work just as well.
+This works on `heterogeneosu_map` with a mixture of Pairs and int(s) just as it would on any data which can be represented as an array of ints. Note that the int requirement only exists because of the `>.int(int)` call, which only takes ints. If we had a map consisting of custom types which implemented `> (other <custom_type>){}`, this would work just as well.
 
