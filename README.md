@@ -21,6 +21,16 @@ Through the combination of these frameworks, we can blur the lines of what it me
 
 From this abstract vantage point, we may rethink what it means for a language to be 'functional' vs 'object oriented' and much more. We will now turn our focus to the language we have developed to wrap our complex theories into something practical: Eons Language of Development.
 
+## TL;DR
+* Everything is a Functor.
+* Use building blocks for code: `<type>(parameter)[container]{execution}`.
+* Comments are `#...#`.
+* Use URIs for custom logic.
+* Write member access as you would a domain name.
+* `@` is `return`.
+* `$`, when prefixed is `clone`, when alone is `this`; and `$$` alone is the caller.
+* Whitespace doesn't matter, but spaces are dynamically filled in.
+
 ## Interpreters
 Coming soon!  
 This language will have several interpreters, the most important of which will be defined here as a `bio::chemical::Axis` for use with Eons Develop Biology.
@@ -78,7 +88,7 @@ everything past this is now a comment.
 #### Resources
 Like comments, Resource Blocks can be terminated by a newline, but no other End Operator. This is only possible when Resources are not nested. When nesting Resource Blocks, you must terminate each Block with a `:`.
 
-Resources may be prefaced with a Scheme symbol, the same way Parameter Blocks may have a function name before them. You can think of `stream::` as roughly the same as `function()`. The only difference is that the Scheme (here: `stream`) gets fed the Resource's contents as a string for custom interpretation, bypassing some, if not all, of the rules in this spec.
+Resources may be prefaced with a Scheme symbol, the same way Parameter Blocks may have a function name before them. You can think of `scheme::` as roughly the same as `function()`. The only difference is that the Scheme gets fed the Resource Block's contents as a string for custom interpretation, bypassing some, if not all, of the rules in this spec.
 
 Resources are explained in [Sequences, Resources, and Temporal Separation](#sequences-resources-and-temporal-separation), below.
 
