@@ -1,984 +1,629 @@
-# Native Biology Code
+# Eons Language of Development
 
-This repo describes the Native Biology Code language specification as well as implements that specification as a `bio::chemical::Axis` for use with the [bio library](https://github.com/develop-biology/lib_bio).
+This repo describes the Eons Language of Development specification and provides interpreters where appropriate.
+This spec supersedes all other naming conventions of Eons.
 
-The bio library provides the basics for creating a directed, recursive hypergraph by allowing, among other mechanisms, the ability of objects to bond other bonded objects and allowing neurons to communicate through synapses, which are themselves bonded objects (i.e. synapses may use or even be neurons and vice versa). Thus, our graphical programming system blurs the lines of what it means "to be", "to have", and "to do".  From this abstract vantage point, we may rethink what it means for a language to be "functional" vs "object oriented" and much more. However, this framework is only as powerful as what we allow in and out of it. Thus becomes paramount, the feature of Symmetry which allows arbitrary data structures, including functions, to be reflected into and out of other systems. These other systems (properly defined as Axes) may be specialized function calls or entire other programming languages. We will now turn our focus to the language we have developed to wrap this library's abstract graph: Native Biology Code.
+## Why
+The goals of this language are 2-fold:
+1. To provide a concise but powerful means of describing data and operations at any scale.
+2. To provide a syntax that is familiar and efficient by maintaining compatibility with established standards.
+
+We believe that the syntax for iterating over memory addresses in an embedded system should be the same syntax for iterating over servers in a network, and should look quite a bit like something you see everyday. Beyond that, the systems you use on a day to day basis should be compatible with at least some of the syntax we propose here. For example, you should be able to name the files on your computer with something that has clear and concise meaning per the rules specified in this document.
+
+## How
+The Eons Language of Development is the emulsifier between the practical applications developed on the [Eons Python Library](https://github.com/eons-dev/lib_eons) and the powerful, but largely theoretical concepts created by the [Eons Develop Biology library](https://github.com/develop-biology/lib_bio). We also draw on years of experience managing semantically sparse data across several scientific disciplines.
+
+The Develop Biology Library (aka Biology) provides the basics for creating a directed, recursive hypergraph. In short, this means data of any dimension ("hyper") flows ("directed") through a network ("graph") of connected nodes, where each connection and node may be graphs unto themselves ("recursive").
+
+The Eons Python Framework extends this directed, recursive hypergraph by simplifying the numerous classes in Biology into a single Functor and wrapping the complexities of Biology's myriad context frameworks into a single system of [Implicit Inheritance](https://github.com/eons-dev/lib_eons#implicit-inheritance).
+
+Through the combination of these frameworks, we can blur the lines of what it means 'to be', 'to have', and 'to do': Biologically Bonding Atoms makes it so that "having" relationships defines who you are (the same way a molecule is defined by its constituent atoms), and when everything is a Functor, what you are determines what you do and vice versa.
+
+From this abstract vantage point, we may rethink what it means for a language to be 'functional' vs 'object oriented' and much more. We will now turn our focus to the language we have developed to wrap our complex theories into something practical: Eons Language of Development.
+
+## TL;DR
+* Everything is a Functor.
+* Use building blocks for code: `<type>(parameter)[container]{execution}`.
+* Comments are `#...#`.
+* Use URIs for custom logic.
+* Write member access as you would a domain name.
+* `@` is `return`.
+* `$`, when prefixed is `clone`, when alone is `this`; and `$$` alone is the caller.
+* Whitespace doesn't matter, but spaces are dynamically filled in.
+
+## Interpreters
+Coming soon!  
+This language will have several interpreters, the most important of which will be defined here as a `bio::chemical::Axis` for use with Eons Develop Biology.
+
+## Case Insensitivity
+The EONS LANGUAGE OF DEVELOPMENT is case insensitive. `myVarIablE` is the same as `myvariable`.
+
+We recommend snake_case for all variable and function names.
 
 ## Blocks
-Native Biology Code is almost like an object-oriented lisp variant and relies heavily on the meaning of different braces instead of keywords.
+Eons Language of Development is almost like an object-oriented lisp variant and relies heavily on the meaning of different braces instead of keywords.
 
-The blocks used are:
-* `()` - Surfaces & Execution (i.e. API)
-* `[]` - Internals (i.e. private members)
-* `{}` - Execution Definitions (i.e. functions)
-* `<>` - Template Programming through Transcription Factors (i.e. types and inheritance)
-* `""` - Strings
-* `/**/` - Comments & Documentation
+The Blocks used are:
+* `::` - Resource: used for all sorts of URI-like semantics.
+* `''` - String: used for strings.
+* `##` - Comment: used for docs & non-evaluated sections of code.
+* `[]` - Container: used to manage repeated elements.
+* `{}` - Execution: used to define and evaluate functions.
+* `()` - Parameter: used to define and bind Surfaces.
+* `<>` - Type: used for inheritance and meta programming.
+
+Each Block is allowed to change how symbols are interpreted within it. For example, the Comment Block does not execute code, and adding "{}" inside a string does not define an Execution Block
+
+String and Comment Blocks (`''`, `##`) are considered "non-coding" while all other Blocks are considered "coding".
+Type and Execution Blocks are considered "instantiating" while Parameter and Container Blocks are considered "detailing"
+
+### Variations
+For compatibility purposes, we support the following variations on Blocks.
+
+#### Strings
+You are allowed to use double quotes for a String Block. Though, we don't recommend doing so, mostly because `shift+'` is more work than just `'`.
+
+#### Comments
+We don't support any other comment styles at the moment (`/**/` might be good to add in the future).
+However, we do support terminating Comment Blocks with the newline character (`\n`), iff (if and only if) there are words after the comment. This means you don't have to remember to always close your Comment Blocks.
+
+`# this is a line comment`
+
+`# this is also a line comment #`
+
+```
+#
+this is a block comment
+#
+```
+
+Just don't mix them up:
+```
+# THIS WILL        (newline terminates this Comment Block ->)
+DESTROY YOUR CODE! (<- supposed to be comment but is now code)
+#
+everything past this is now a comment.
+```
+
+#### Resources
+Like comments, Resource Blocks can be terminated by a newline, but no other End Operator. This is only possible when Resources are not nested. When nesting Resource Blocks, you must terminate each Block with a `:`.
+
+Resources may be prefaced with a Scheme symbol, the same way Parameter Blocks may have a function name before them. You can think of `scheme::` as roughly the same as `function()`. The only difference is that the Scheme gets fed the Resource Block's contents as a string for custom interpretation, bypassing some, if not all, of the rules in this spec.
+
+Resources are explained in [Sequences, Resources, and Temporal Separation](#sequences-resources-and-temporal-separation), below.
 
 ### Block Precedence
-Blocks may have different precedence depending on the context in which they are found. However, in general:
-1. `<>` Type blocks are processed first, before any other block.
-2. `[]` Internal blocks have higher precedence than Surfaces.
-3. `()` Surfaces are processed before execution.
-4. `{}` Execution is processed last, after the code has been "compiled".
+Blocks are interpreted in the following order:
+1. `::` Resource Blocks are the first coding Block to be processed, allowing them the most dramatic code changes.
+2. `''` String Blocks are processed after Resource Blocks.
+3. `##` Comment Blocks precede all other coding blocks.
+4. `[]` Container Blocks are processed after Resource Blocks
+5. `{}` Execution Blocks must be processed before Type Blocks.
+6. `()` Parameters are processed after Execution.
+7. `<>` Type Blocks are processed last to allow alternative interpretations of `<` and `>`.
 
-Non coding blocks (`/**/` and `""`) are never processed (but strings (`""`) when not used as blocks  are always processed).
-## Types
-Different data structures are defined by which blocks they possess. At minimum, a definition must have 2 or more coding (i.e. non-string, non-comment) blocks.
-The available data structures are as follows; "symbol" represents the name of whatever the expression defines:
-* `symbol type` - predefined type (treats `type` as the blocks which define it)
-* `symbol()[]{}` - Protein (i.e. function or synchronous functor)
-* `symbol<>()` - Vesicle (i.e. array or struct)
-* `symbol<>()[]{}` - Cellular Structure, such as a Neuron, Tissue, or Organ (i.e. class, node, or stateful asynchronous function)
-* `symbol<>[]{}{}` - Synapse, with an upstream and downstream function (i.e. edge)
-* `symbol<>{}` - Transcription Factor (i.e. decorator, parent class, meta programming)
-* `symbol<>(){}` - Plasmid + RNA Polymerase (i.e. a package)
-* `symbol(){}` - executable, the entrypoint for running a bio program.
+### The Need for Containers
+Containers are the Eons way of cramming multiple values into a single symbol. We don't support `*args` or numerous variations on the set. All we provide is a "many" notation.
 
-There are no differences between arrays / lists, maps / dictionaries, sets, etc. In Native Biology Code, items in a Vesicle may be mixed and match to your liking.
-
-If you do not know the type you want ahead of time, you can use `*` in the type declaration and set the type and value at once with "=". This is similar to the `auto` keyword in C++. Please be aware that using `*` prevents type matching from occurring properly and may lead to unexpected results when Rotating your code to other languages.
-
-`*` is also used after a type to indicate copy-by-value.
-`**` means any time, copied by value.
-
-## Syntax
-If an expression has 1 or fewer coding blocks, it will be executed (e.g. `functionCall()` or `functionCall` vs `functionDeclaration()[]{}`).
-All executed statements (i.e. those within a `{}`) must be separated by (i.e. end with) a `;`.
-All items in a `()`, `[]`, or `<>` block must be separated by a `,`.
-
-Symbols may be defined outside of any declaration block. If they are, these symbols may not be changed by any execution block and are effectively static, const, and global.
-
-It is an error to redefine a symbol. `type type` will always be an error. `symbol symbol` is an error when used in isolation, as it will be interpreted as a redefinition of `symbol` to the type which `symbol` defines.
-
-However, `symbol symbol` may be valid when used as a part of a larger, executed expression. These rules are applied depending on the types of the left-hand statement (LHS) and the right-hand statement (RHS):
-* If LHS is a Protein and there is no RHS, an empty `()` is appended to the end of the function call.
-* If LHS is a Protein and RHS is a Vesicle or Cellular Structure, a wrapping `()` is applied to the RHS.
-* If LHS is a Protein and RHS is also a Protein which is defined as a Surface on the LHS, a `.` is added to replace the whitespace between the symbols.
-* If LHS is a Protein and RHS is also a Protein which takes at least 1 argument and is not defined on the Surface of the LHS, the LHS will be type-casted to the type of the first argument of RHS (e.g. `add(1,2) > 3` becomes `add(1,2).int.>(3)`). This may result in an error if the type-cast fails or if the type-casted LHS does not implement RHS on its Surface.
-* It is an error if LHS is a Protein and RHS is also a Protein which takes no arguments and is not defined on the Surface of the LHS.
-* If the LHS is a Vesicle or Cellular Structure and the RHS is a Protein, Vesicle, or Cellular Structure, a `.` is added to replace the whitespace between the symbols.
-
-Thus, consecutive symbols become expressions in a right to left manner to automatically fill in function calls and member access. This means we can define `+` as a custom function in an object and say `a + b`, which becomes `a.+(b)`. It is an error if the LHS is a Vesicle or Cellular Structure and does not define the given symbol or if the LHS is a Protein which does not have a Surface of the RHS type and the RHS cannot be converted to a type the LHS takes (see below for more on type conversion).
-
-You cannot declare variables in an execution block (`{}`).  
-You may execute expressions in declaration blocks (`()` and `[]`) and type blocks (`<>`), provided that they:
-* include single-block expressions (i.e. `functionCalls()` or `indexAccess[]`) and
-* do not contain spaces (i.e. none of the `symbol symbol` autofill logic is enabled in declaration blocks).
-
-There is no `this`, `self`, etc. all unprefaced symbols in an execution block are prefaced with the current object to which the execution block belongs. If no such symbol can be found, the symbol which defines the containing execution block will be searched and so on until all contexts are exhausted. It is an error if a symbol is not found in any execution block leading to the current expression. See Symbol Resolution, below for more info.
-
-Members defined within an object's `[]` will only be searched within that object's `{}`. No other object within or without shall have access to an object's Internal members. The only exception to this is Transcription Factors, which have access to any `[]` they can reach.
-
-It is an error if a member is declared in both a `()` and `[]`. The same symbol can be used in a `<>` as in either `()` or `[]`, since the meaning of `<>` is dependent on the object to which it applies and will never be used for member definition.
-
-Surfaces may be accessed by their name or simply by their index using the `[]` operator in an executable expression. Index operators take either a numeric position (e.g. `[0]`) or a string corresponding to a Surface or Internal member name (e.g. `["myVar"]`).
-
-Any symbols which begin with `__` (2 underscores) are compiler defined and may not be changed. It is illegal for your variables to begin with underscores.
-
-Proteins (i.e. functions, or more accurately functors, or even more accurately `()[]{}`) do not have return types. This is to enable multiple and delayed access to returned values.
-If you would like to treat a Protein as a type, you may define a type conversion for the Protein, which will make the syntax appear as a return value in other languages. There's more on that below.
-
-Neurons, specialized Cellular Structures, may be connected via `<>()[]{} --- <>[]{}{} ---> <>()[]{}`, `<>()[]{} <--- <>[]{}{} --- <>()[]{}`, or `<>()[]{} <--- <>[]{}{} ---> <>()[]{}`. Meaning that in a `source --- Synapse ---> target` expression,  a `source` Cellular Structure is connected to a `target` Cellular Structure through a `Synapse`. See Examples below for more info. 
-
-## Control Flow
-There are only 3 forms of control flow available in Native Biology Code: 
-* `if` expressions
-* `while` loops
-+ `break` statements
-
-Control flow statements must be an entire expression and cannot be part of a larger expression. This means they must begin with either `{` or `;` and end with either `;` or `}`.
-
-`if` expressions are defined as `...?{}` and `if...else` expressions are defined as `...?{}{}` where `...` is the condition to check.
-
-`while` loops are defined as `(...){}`, where `...` is the condition to run the loop again.
-Break statements are simply `break`.
-
-Break statements return execution of any `{}` to the caller. Meaning, they may be used to stop regular function calls from running to completion.
-
-There are no native `for` or `foreach` loops because the `[#]` syntax has no type enforcement. For... loops must be built with the language, rather than be a part of its core.
-
-## What Gets Run
-When running a .bio executable, all standalone execution blocks are combined in the order they are found into one `main(){}` function.
-
-If multiple execution blocks have the same name, only the last is taken in the position in which it is found.
-
+To expand a container, you can use an empty `[]` after the container symbol.
 For example:
 ```
-//possibly from including an external library
-main()
-{
-    print("this block is shadowed by the main(){} later on");
-}
-
-...
-
-setup()
-{
-    print("setup");
-}
-
-...
-
-main()
-{
-    print("main");
-}
-```
-would output:
-```
-setup
-main
+my_container = ["a", "b", "c"]
+my_container[] # expands to "a", "b", "c" #
 ```
 
-Note that all variables must be declared within the executable's Surface and cannot be declared within the execution block.
+#### Container Expansion
+Container expansion is done dynamically, depending on what other symbols are adjacent to the Container.
+In general, whatever symbol follows the Container will be expanded as a foreach loop of the given operation.
 
-Let's create an `example.bio` executable with the contents:
+For example, `[1,2]*[3,4]` should yield `[3,4,6,8]`, while `3 + [first, second].my_object` should be equivalent to `3 + first.my_object; 3 + second.my_object`.
+
+You'll see more of this throughout this spec.
+
+## Types
+There is only one type in the Eons Language of Development: the Functor (Protein in Biology).
+
+All data structures, functions, etc. can be mutated into each other.
+
+Types are written as `my_object<my_type>`.
+For example:
 ```
-main
+animal<>
 (
-    toPrint int = 5;
+    legs <int>
+    color <> # <- empty type is okay #
+)
+cow <animal>
+{ # <- note the use of the Execution Block, rather than the Parameter Block #
+    legs = 4
+}
+```
+
+There are no differences between arrays / lists, maps / dictionaries, sets, etc. In Eons Language of Development, items in a Container may be mixed and match to your liking. If you would like to enforce type checking, create a specialized Functor which defines your addition Operators (e.g. `+` and `+=`).
+
+If you do not know the type you want ahead of time, just leave the `<>` empty. An empty Type Block is very similar to the `auto` keyword in C++.
+
+### Return Types
+Functors (Proteins) can take multiple inputs and give multiple outputs. Because of this, there is no "return value", as there is in typical functions. Instead, the members of the Functor may be accessed after it has been executed.
+
+However, for simplicity, a default `return` member is added to every Functor. It is up to each Functor to use it. See [Exiting and Returns](#exiting-and-returns), below, for more info.
+
+To enforce a type of return, simply set the Type Block of the members you'd like to return.
+For example,
+```
+hello_world(return <string>)
+{
+    @("Hello World!")
+}
+```
+
+### Combining Types
+When multiple types are combined, say through inheritance (e.g. `child<parent1, parent2>()`), all Blocks from the combining types are merged. This means anything in `()`, or `{}` from the first type, will be followed by the respective contents for the second type, etc.
+
+If we have:
+```
+parent1<>
+(
+    member1 <>
 )
 {
-    //toPrint int = 5; // <--- INVALID. Variables cannot be declared within a {}
-    print(toPrint);
+    print member1
 }
 ```
-This allows the program to take arguments: `./example.bio --toPrint=10` would output "10".
-
-When multiple executables have Surfaces, the Surfaces are combined in the order they appear.
-
-Let's make `example2.bio`:
+and
 ```
-first
+parent2<>
 (
-    name string
+    member2 <>
 )
 {
-    print("Name: " + name);
+    print member2
 }
-
-second
+```
+our child from above would be the same as:
+```
+child<>
 (
-    id int
+    member1 <>
+    member2 <>
 )
 {
-    print("Id:" + id);
+    print member1
+    print member2
 }
-```
-which is condensed to:
-```
-__main
-(
-    name string,
-    id int
-)
-{
-    print("Name: " + name);
-    print("Id:" + id);
-}
-```
-We can then say `./example2.bio myName 5`, which would output:
-```
-Name: myName
-Id: 5
 ```
 
-## Copy by Reference by Default
+## Operators
+The Eons Language of Development does not use any keywords; all information necessary to interpret code is presented as Operators. This means that any words are user defined and not part of the built in language.
+
+The Operators used are:
+* `@` - Exit
+* `,`, `;`, `\n` (newline) - End.
+* `.` - Access, also referred to as spatial separation.
+* `/` - Sequence, also referred to as temporal separation (only used in Resources).
+* `$` - Sigil
+* `?` - Condition
+* `&` - And
+* `|` - Or
+
+The space is a dynamic Operator that is filled in depending on the context of where it is found. See the [Spacing Autofill rules](#spacing-autofill) below.
+
+Besides those for Blocks, these are the only characters used by the Eons Language of Development. All other symbols (e.g. `+`, `-`, `*`, `/`, `%`, etc.) are all user defined and can be changed as thou wilt.
+
+You may also override `<` and `>` for comparisons (and thus `<=`, `>=`, etc.). See [Declaration and Evaluation](#declaration-and-evaluation), below, for more info.
+
+### Exiting and Returns
+The Exit Operator exits the current Execution Block, whatever that may be.
+
+`@` behaves as a function, taking arguments. If arguments are provided, the corresponding member variables of the current Functor will be assigned the values given.
+
+There is a default member variable (aka Surface) present in all Functors: `return`. When calling `@(my_var)`, the `return` Surface Binds the `my_var` variable, making it available to other Functors.
+If you call `@(first_return=first, second_return=second)`, the first and second return Surfaces will be Bound, as described, leaving the default `return` object untouched.
+`@(standard_return, optional_return=extra_information)` is also valid: `return` will be equal to `standard_return` and the `optional_return` Surface will be equal to `extra_information`.
+It is not valid to Exit with multiple, unnamed args; if you wish to return a tuple, wrap it in a Container. Meaning, `@(first, second, third)` is invalid and should be `@([first, second, third])`, so that the `return` Surface will be equal to `[first, second, third]`.
+
+>"The exits are at..."
+
+('@' is usually called 'at').
+
+#### The Double Exit Operator
+Where `@` means `return`, `@@` means `break`. The idea is that the more work that has to go into typing a statement, the less powerful the statement becomes. So, `@@`, being more work to type than `@`, will only exit the current Execution Block if that Block is a control flow statement and not the Execution Block belonging to a Functor. See [Control Flow](#control-flow) below for more info.
+
+### Escaping
+Still use `\` to escape other characters.
+
+**You should only ever need to escape characters within a string** (e.g. `my_\n_var` is not a valid variable name). Because String Blocks are non-coding, this is fine.
+
+### Line Endings and Code Separation
+Code may be separated by any End Operator. All are equally valid in all contexts, except the newline End (`\n`), which may be used to terminate Comment Blocks.
+End Operators are not necessary where a Block terminator is present. For example, `[my,list]` does not need to be `[my,list,]` because the `]` separates the code from whatever may follow.
+
+### Access and Spatial Separation
+The Sigil Operator is used to reference both the current object (`$`) and the calling object (`$$`). However, it can only do this when it's not used as a prefix for another symbol.
+
+The access Operator (`.`) is used in increasing order of scope, similar to how domain names are `subdomain.domain.top_level_domain`.
+This ordering is reversed, as compared to most other programming languages, but should be familiar, as it's how we all handle URIs and file extensions. The benefit of this order is that you only need to append what is absolutely necessary and the most important scope is immediately apparent, when read from left to right.
+
+In the Eons Language of Development, this increase in scope allows us to easily access variables defined in encapsulating spaces (Vesicles or Solvents, in Biology).
+For example:
+```
+my_class<>
+(
+    constructor(name<string>)
+    {
+        #
+        '$$' comes after name to indicate the greater context to which 'constructor' belongs (in this case, 'my_class').
+        It is also necessary to specify 'name.$$', since the local context ('name.$') overrides the parameter.
+        #
+        name.$$ = name
+    }
+    
+    say_hi()
+    {
+        #
+        here, there is no other context to which 'name' could belong beside '$$', so no additional specification is necessary.
+        however, additional specificity does not hurt.
+        #
+        print name
+    }
+)
+```
+
+Spatial separation also applies to competing parent scopes. Say you have a class which 'inherits' from `parent1` and `parent2`. If both parents define `some_var`, you can access each parent's value with `some_var.parent1` and `some_var.parent2`, respectively. If no greater domain is suffixed to `some_var`, it would be an error. However, if you define `some_var` in your class and then use the variable without a suffix, it will default to `some_var.$`, since `$` would be the 'closest', 'spatial' scope to where the variable is used.
+
+#### Beyond the IDE
+This system of spatial separation is intended to scale beyond code and be applicable to all forms of organization. However, you may encounter some ambiguity when the objects you reference do not have an explicit list of members.
+
+When naming documents, for example, we often pick names based on an implied, not explicit, structure. Even with a directory, `team.department.organization.company` is often just a generally agreed upon idea which won't throw errors if used incorrectly.
+
+If you're ever confused about which side of a variable string to append to, go by this rule of thumb:  
+**Members** add to the **left**  
+**Types** add to the **right**  
+
+So, `really.long.name`, could become `specific.issue.really.long.name.document.form`, where `specific` and `issue` are both "members" and `specific` is a nested sub-member of `issue...`, which is a nested sub-member of `really...`, etc. This logic continues all the way to the right, where `document` is a nested sub-member of `form`. Inversely, from the left, `form` and `document` are both types. In this case, `...document`, is a type of `form`, and `...name` is a type of `document`, etc. all the way to `specific` being a type of `issue`.
+You'll see this pattern arise as a datum grows to encompass a larger scope. You might get `another.issue.really.long.name.spreadsheet`, etc.
+
+It is an intended result of this nomenclature that the salient information be found at the ends of a fully resolved symbol.
+
+#### TODO: Implicit Spatial Scopes
+Eons Python Library allows you to specify the precedence of spatial scopes with Fetch. That behavior needs to be ported to Biology.
+
+### Sequences, Resources, and Temporal Separation
+Sequences enable tasks to be accomplished dynamically: the same set of instructions can yield two different results when executed in different orders. Sequences are created using a Resource Block in conjunction with the Sequence Operator (`/`). This system mimics the URIs that we are familiar with (e.g. `http:object.my/do.stuff:`).
+
+You can use Sequences anywhere you could evaluate an expression (they are one and the same).
+
+The code between Sequence Operators is called a "Step".
+
+Note that Sequences read left to right as the Steps build upon each other: `:first/second/third:`.
+
+The key differences between a Sequence and a typical URI are as follows:
+* The symbol which directly prefixes the Resource Block's opening `:` (the "Scheme") has full control over the code that follows. Meaning, you can interpret what's in a Resource Block however you'd like (e.g. `cpp:/path/to/file.cpp` could act as a Foreign Function Interface (FFI)).
+* Having multiple Sequence Operators in a row is almost always ineffectual (i.e. `//` is the same as `/`).
+* It is not necessary that the Resource Block's opening `:` be followed by a Sequence Operator (i.e. `http:example.com` should be the same as `http://example.com`).
+* Sequences may be nested (e.g. `cpp:http:example.com/online.cpp::`).
+
+There are 5 important notes here:
+* Resource Blocks are processed before any other coding Block; meaning, you can still write things like `?key=value`, even though that syntax is not normally valid.
+* All `/` as used for division, etc. must be escaped with `\` (e.g. `1/2` => `1\/2`). Because of this, we highly recommend defining your Execution Blocks outside of the Sequence.
+* Not having a Scheme before the Resource Block will make it default to the typical form, described by the following Standard Sequences.
+* When nesting Sequences, each must be terminated, and using a newline End Operator is insufficient.
+* Any of these rules may be overturned by a Scheme's custom interpretation of its Resource Block.
+
+#### Standard Sequences
+Typically, Sequences implicitly execute each step along their path and make the previous Steps methods and members available to the subsequent Steps. **Only the last step in a sequence is returned.** Please note that, as with all executions, the **whole** Step object is returned so that any part of it may be accessed.
+
+The Eons Python Library calls this system of Sequences ["Implicit Inheritance"](https://github.com/eons-dev/lib_eons#implicit-inheritance).
+
+For example, `:find/my/scarf` calls the `find` Functor's Execution Block, then makes all methods and members in `find` available to `my`, then call's `my`'s Execution Block, then makes all methods and members in `my` available to `scarf`, then call's `scarf`'s Execution Block and **returns** `scarf`. You can then build a `your` Functor and call `:find/your/scarf(color=blue)`; or create a `store` Functor for `:store(in=["garage","attic"])/my/scarf`, etc. The point in adding Sequence support to the language is to encourage reusable code. If you can make your Functor sequence compatible, it can be (ab)used in many marvelous ways!
+
+#### Returning a Sequence
+If you prepend a Sequence with the Exit Operator (e.g. `@(:find/my/scarf:)`), the Sequence will be evaluated and the last Step will be returned from the current Execution Block.
+
+### Merging Spacetime
+You can create spatial constructs using temporal sequences by wrapping them in a Type Block. Because the whole Functor from the final step in a sequence is returned and that Functor contains the members and methods of what came before it, you can simply set this functor as the parent of the object you're creating. Note that this does execute each Step in the Sequence.
+
+For example, `scarf_finder <:find/my/scarf:>` allows you to later call `scarf_finder()` to execute the created `scarf` object. You can also set defaults here; `scarf_finder <:find/my/scarf(color=blue):>` is roughly the same as `scarf_finder <:find/my/scarf:>(color=blue)` and can be overridden when calling `scarf_finder(color=red)`.
+
+### Parallel Sequences
+It is possible to execute multiple Sequences in parallel. To do this, simply use a Container.
+
+For example, `:find/[my,your]/scarf` would execute `:find/my/scarf` and `:find/your/scarf`. This would return both the modified `scarf` objects in a Container: `[:find/my/scarf:, :find/your/scarf:]`.
+
+If the Functors you execute are configured to run in different threads, these jobs will be executed in parallel.
+
+You can also achieve this same functionality by defining the asynchronous behavior in the execution block of your Functor. For example:
+```
+custom_async(to_execute)
+{
+    custom_thread_engine/to_execute[]
+}
+:find/custom_async([my,your])/scarf
+```
+
+### File Inclusion
+To include external files, we recommend `include` as the Scheme. This may be overridden or derived from, should you like to build your own linking system.
+
+An example would be `include:/path/to/my.file`
+
+### Sigils and References
 Objects are normally copied by reference and any change to the object will be changed in all locations.
 These changes are thread-safe by default and may wait on other threads.
 
-However, if you would like to copy an object by value (possibly for non-blocking or destructive access to the object), indicate such in the type declaration.
+However, if you would like to copy an object by value (possibly for non-Blocking or destructive access to the object), prefix the Sigil Operator (`$`) to the variable in the variable declaration or whenever you access the object. Using `$` as a prefix will make a copy of the given object for use within the current Execution Block. Using `$` multiple times in the same Execution Block only creates 1 local copy; however, applying the Sigil Operator in multiple Execution Blocks creates a new copy for each.
+
 For example:
 ```
-add(first int*, second int*, result int)[]
+add($first <int>, second <int>, result <int>)
 {
-    result = first + second;
+    result = (first + $second)
+    @ result
 }
 ```
-Here, `first` and `second` are copied by value and will remain a part of the `add` Protein until they are unbound.
+Here, `first` and `second` are copied by value and will remain a part of the `add` object until they are unbound.
 
-## Garbage Collection
-When an object has no references, it is deleted. This is handled through the `chemical::` `solution` system in the underlying C++.
+This also applies to Sequences: `:reusable/$new`.
 
-## Function Arguments
-Arguments may be provided by order or by symbol specification. For example, consider:
+#### Garbage Collection
+When an object has no references, it is deleted.
+
+#### Accessing the Current and Calling Objects
+Other languages use `this` or `self` to indicate the current object. The Eons Language of Development uses a standalone `$`.
+
+Additionally, 2 Sigil Operators (`$$`) indicates the calling Functor.
+When one Functor calls another, the caller is made available to the callee through `$$`. In this way, `$` is very similar to `./` in Unix filesystems while `$$` is similar to `../`; in this same manner, 2 callers up would be `$$.$$`, the same way 2 paths up is `../../`.
+
+To demonstrate the difference between `$` as a copy by value indication and `$` as a reference to the current object, consider the example above rewritten more explicitly:
 ```
-add(first int, second int, result int)[]{result = first + second;},
-
-main
-(
-    three int
-)
+add($first <int>, second <int>, result <int>)
 {
-    three = add(1, 2).result;
+    result.$ = first.$ + $second.$
+    @ result.$
+}
+```
+
+## Declaration
+Symbols are defined when either the Type Block (`<>`) or Execution Block are used.
+
+You cannot change the `<>` nor `{}` without redefining the symbol!
+
+This means `my_class()` will execute the `my_class` symbol defined elsewhere. Whereas, `my_class<>()` is a declaration and will not execute any code. The same is true for `my_function()` vs `my_function(){}`. Note as well that `my_class(){}` and `my_function<>()` are valid declarations (you can use this when combining functions, e.g. `combined_function<do_first, do_second>(extra_arg<>)`).
+
+However, both `<` and `>` may be used in evaluated expressions as comparisons. The difference between the Type Block and the less than & greater than symbols is that the latter are always followed by `?`, `&`, or `|`.
+
+**It if forbidden to declare or change types in a comparison statement**. That's how we solve that problem.
+
+## Execution
+If an expression lacks `<>` or `{}`, it will be executed (e.g. `function_call()` or `function_call` vs `function_declaration(){}`).
+All executed statements (i.e. those within a `{}`) must be separated by a valid line ending (`,`, `;`, or `\n`).
+
+Redefining a symbol changes the existing symbol for all future execution. Meaning, `symbol symbol{do_this_instead}` will change the behavior of `symbol`. However, `symbol symbol` without a Type nor Execution Block will be executed per the Spacing Autofill rules below.
+
+### Spacing Autofill
+These rules apply to any set of symbols separated by spaces:
+* The last symbol is always wrapped by a `()` for the previous symbol.
+* If there is only one symbol, it is as if an empty `()` is appended to the end of it.
+* If there are many symbols separated by spaces, for all but the last, the order is inverted and they are joined by `.`s.
+* If a space is followed by a `(`, the space is removed.
+
+This means we can define `+` as a custom function in an object and say `a + b`, which becomes `+.a(b)`. We can also do `a unary add something.b`, which becomes `add.unary.a(something.b)`. Note that `a + b` is NOT the same as `a+b`; the latter is a single symbol, e.g. `a+b<parent_class>(arg<>){do_stuff}`.
+
+### Grouping
+If an expression is given as an argument to a function, the expression will be evaluated before passing the result to the function.
+This allows you to use Parameter Blocks to group expression.
+
+For example, consider the statement `three == 1 + 2 ? {@ true}`; is `1` a member of `==`? It probably isn't. So, we should rewrite this as `three == (1 + 2) ? {@ true}`. This will expand to: `bool.==.three(+.1(2))?{@(true)}`
+
+Expressions in Container Blocks are likewise evaluated.
+
+## Type Casting
+A type may be treated as another type if it defines the target type as a member variable.
+
+Type casting happens implicitly whenever a function argument is declared to have a type.
+Type casting happens explicitly whenever the type member is accessed.
+
+For example:
+```
+inventory_number<>
+(
+    tracking_id<int>
+    
+    # Make inventory_number castable to an int #
+    int<traking_id>
+    
+    #
+    The above could also be written as:
+    int{@ tracking_id}
+    #
+)
+
+ship(number<int>)
+{
+    ...
+}
+
+some_item<inventory_number>
+
+ship some_item
+#
+This line calls ship(int.some_item), which returns the tracking_id from the inventory_number parent
+#
+```
+
+## Control Flow
+There are 3 forms of control flow available in Eons Language of Development:
+* `if` & `if else` statements
+* `foreach` loop
+* `while` loop
+
+Use `@@` to break out of a control flow Execution Block without exiting the greater Execution Block which contains the statement.
+i.e. `@()` means `return` and `@@()` means `break`. You may still set member variables when breaking, as can be done with the Exit Operator.
+
+The `if` statement is defined as `...?{}` and the `if else` statement is defined as `...?{}{}`, where `...` is the condition to check.
+Note that the `?` will always cast the preceding statement to `bool`. It is an error if `bool.my_type` returns an `int`, etc.  
+There are no `else if` or `elif` statements at this time.
+
+The `while` loop is defined as `(...){}`, where `...` is the condition to run the loop again. Like `if` statements, `while` loops will cast their condition to `bool`.
+To exit a while loop, use the Double Exit Operator (`@@`). You may also return a value from a `while` loop with `@(var_to_return)`. Keep in mind that this does not exit the Execution Block which started the loop. You must still
+
+The `foreach` loop is defined as `container[iterator]{action}`, where `container` is the Container to iterate over (previously defined by `[some, set]`) and  `iterator` is the symbol to use within `action` to represent the current item in the `container`. To enable type checking in a foreach loop, simply specify a Type Block after the iterator name.
+For example,
+```
+my_list = ["a","b","c", 1, 2, 3]
+
+# Foreach loop, using [iterator<type>]{...} #
+my_list[letter<string>]
+{
+    print letter
+}
+```
+would likely print "abc" (depending on the implementation of `print` and assuming `string` hasn't been hacked to identify numbers, etc.)
+
+## Container Comprehension
+A Container can be expanded into its constituents by appending `[]`. You can further restrict this behavior by specifying a Type Block and / or a Parameter Block within the Container Block.
+For example,
+```
+color<>
+(
+    name <>
+)
+dog<>
+(
+    name <string>
+)
+
+my_colors_and_dogs = [color(name='red'), color(name='blue'), '#00FF00', dog(name='red')]
+
+my_colors_and_dogs[<color>] # gives [color(name='red'), color(name='blue')] #
+my_colors_and_dogs[(name='red')] # gives [color(name='red'), dog(name='red')] #
+my_colors_and_dogs[<dog>(name='red')] # gives [dog(name='red')] #
+```
+
+## Constructors, Destructors, and Lifecycle
+Functors are called with `()`. There is no difference between instantiation and execution. When a Functor is called, if the Functor has not been instantiated previously, it will be created automatically and the variables provided in the Parameter Block will override whatever default variables the Functor defined when it was declared.  
+In this way, declaring symbols in the Parameter Block of your Functor is as close to a native constructor as we can get.
+
+Likewise, there are no native destructors, and all closing logic should be handled by whatever greater context exists in your program.
+
+However, by convention, `constructor()` is called at the top of a Functor's Execution Block and `destructor()` is called at the bottom. These are not required and you can name them whatever you'd like. In general, we recommend defining `constructor(){}` and `destructor(){}` methods only where appropriate.
+
+Think of the lifecycle of your Functor as existing entirely within it's Execution Block. Every time the Functor is called, it is as if its instantiated anew. You are allowed to cache things between these instantiations but doing so prevents you from destroying them. If you have hardware or even a whole cloud compute cluster that needs to be initialized before your logic, it is highly recommended that you do so in the calling scope and pass the necessary resources to your Functor. Doing this allows the calling scope to tear down those resources when all is done.
+
+## Public, Protected, and Private
+By default all members are `public`. However, you can mark members as `protected` or `private` by simply calling the appropriate Functor.
+For example,
+```
+my_class<>
+(
+    public_member <>
+
+    protected(
+        protected_member <>
+    )
+
+    private(
+        private_member <>
+    )
+)
+```
+
+These Functors are not built in and can be overridden. Likewise, they can be extended; you are welcome to create your own access control statements.
+This pattern operates by executing Functors within the Parameter Block. As a result, we can add members to the caller after some modification. In this case, the `protected` and `private` modifications make it such that any access to members provided becomes restricted to either the `my_class` object and its children or to only the `my_class` object, respectively.
+
+## Some Examples
+
+### Calling Add
+```
+add(first <int>, second <int>, return <int>)
+{
+    @(first + second)
+}
+
+main(three <int>)
+{
+    # All of these are valid ways to use the `add` Functor.
+    three = return.add(1, 2);
     three = add(1, second = 2);
     add(1, 2, three);
-    add(1, 2, result = three);
+    $add(1, 2, return = three);
+    #
+    Note the lack of a Sigil when using 'three'.
+    This will cause add's 'return' to become a reference to 'three' whereby changes to return also change three.
+    To prevent this from lingering on subsequent calls to add, we prefix add with the Sigil.
+    This makes a copy of the Functor, which is destroyed when the Execution Block terminates.
+    #
 }
 ```
-All of these are valid ways to use the `add` Protein.
 
-Note that we can treat `add` as if it had a return value with:
+### Sorting a Container
 ```
-add
+sort
 (
-    first int,
-    second int,
-    result int,
-    
-    //"return value" See the section on Type Conversion, below, for more info.
-    int result
-)
-[]
-{
-    result = first + second;
-}
-```
-Now, we can say `three int = add(1, 2)`, without needing to specify `.result`.
+    array <> # Note that we copy by reference, not value.
 
-Here's another example:
-```
-sort(array <>())
-[
-    index int,
-    buffer * //we want buffer to be any type, so we mark it as "*", which allows us to set the type and value later with "=".
-]
+    private(
+        index <int>
+        buffer <> # we want buffer to be any type, so we mark it as '<>'
+    )
+
 {
-    array size <= 1 ? {break};
+    array size <= 1 ? {@}
     
-    //the above statement is dense.
-    //array size expands to array.size(), which gives the number of Surfaces in a Vesicle or Cellular Structure (and may be overriden).
-    //the rest of the if condition expands to: array.size().<=(int).
-    //the Native Biology Code interpreter will check array.size() for an int conversion, which exists, and thus will call: array.size().int.<=(int).
-    //the if statement then reads ...int.<=(int).bool 
-    //the if statement (i.e. condition ? {true case};) does not require the word "if" nor parenthasese and is terminated with a ";", just like every other expression.
-    //because "break" is the last (and only) expression in the if execution block, it does not need to end with a ";".
-    //"break" ends the function, returning control to the caller.
-    
-    index = 0;
-    (true) //while loop
+    #
+    The above statement is dense.
+    'array size <= 1' expands to <=.size.array(1),
+    Presumably, 'size.array' is an int which gives the number of members in the array Functor (i.e. the number of Surfaces on the Protein).
+    The <= Functor would then be defined in the 'int' object.
+    The if statement then reads bool.<=.int(int), which should provide the value of return.<=.int(int) as a bool (which it likely already is).
+    The Exit Operator (@) is then called if the above bool is true, ending the execution.
+    #
+
+    index = 0
+    (true) # while loop
     {
-        //index + 1 must have spaces and expands to index.+(1)
-        //The following becomes: array[index].>(array[index.+(1)]).bool ? ...
+        # index + 1 must have spaces and expands to +.index(1)
+        # The following becomes: bool.>.array[index](array[+.index(1)]) ? ...
         
         array[index] > array[index + 1] ?
         {
-            buffer = array[index];
-            array[index] = array[index + 1]; 
-            array[index + 1] = buffer;        
-        };
+            buffer = array[index]
+            array[index] = array[index + 1]
+            array[index + 1] = buffer   
+        }
         
-        index ++; // note the space after "index", making the expression expand to index.++().
-        index == array size - 1 ? {break}; 
-    };
-}
-
-Pair <>
-(
-    name string,
-    value int,
-    
-    int value //Type Conversions (for predefined ">" operation)
-)
-
-main
-(
-    heterogeneosuMap <>
-    (
-        var1 Pair = ("One", 1),
-        var3 Pair = ("Three", 3),
-        var4 int = 4,
-        var2 Pair = ("Two", 2)
-    )
-)
-{
-    sort(heterogeneosuMap);
-}
-```
-This will result in `heterogeneosuMap` being rearranged as:
-```
-heterogeneosuMap <>
-(
-    var1 Pair = ("One", 1),
-    var2 Pair = ("Two", 2)
-    var3 Pair = ("Three", 3),
-    var4 int = 4,
-)
-```
-This works on `heterogeneosuMap` with a mixture of Pairs and int(s) just as it would on any data which can be represented as an array of ints. Note that the int requirement only exists because of the `int.>(int)` call, which only takes ints. If we had a map consisting of custom types which implemented `> (other CustomType)[]{}`, this would work just as well.
-
-## File Inclusion
-
-`&"/path/to/file.bio"` will include all the contents of the specified file in the exact location the `&` statement occurs in.
-
-This means you can do crazy things like create a file with the contents:  
-`"FunctionDefinition.bio"`
-```
-doStuff(with, internals)
-```
-And then use that file in your code:
-`"Main.bio"`
-```
-MyFunction(with int)[internals <>()]
-{
-    &"FunctionDefinitions.bio"
-}
-```
-
-## Symbol Resolution
-
-### Execution Blocks
-When an execution block looks up a symbol, it begins with the Internal members of the object it is operating within, if there are any. Next, the Surfaces of the object (if there are any) are checked. If a symbol is not found within the `[]` or `()` of an object, the Surfaces of the containing executing object, if one exists, are searched recursively until a match is found. If no match is found within the declared variables leading to the currently executing expression, the global context is searched as read-only. Write operations on globally declared objects are forbidden.
-
-This has 2 important implications:
-1. Variables may be context defined and, unlike other languages, do not always need to be explicitly supplied to the currently executing context.
-2. Symbols defined closer to the point of execution take precedence over those defined farther away.
-
-To illustrate the first point, consider the function:
-```
-addImplementation()[]
-{
-    result = first + second;
-}
-```
-This code is valid only in a context like this:
-```
-add
-(
-    first int = 1,
-    second int = 2
-    result int
-)
-[
-    //NOTE: none of first, second, nor result can be Internal as 
-    //  Internal symbols are only accessible from the matching execution block, 
-    //  not the sub-execution blocks contained within.
-]
-{
-    addImplementation
-}
-```
-Here, `addImplementation` sets the value of the `add` Protein's `result` using its `first` and `second` surfaces.
-
-This makes it possible to "pass" the caller transparently to other execution blocks, the same way `this` is passed transparently to C++ methods.
-
-Note that there is no way to access a callers methods by number. You cannot say `[0] + [1]`, as this notation explicitly references the Surfaces of the current object and will never reference the Surfaces of a greater context. If you would like access to the Surfaces of the caller without referencing them by name, you must have the caller pass the relevant symbols to the current object's Surfaces.
-For example:
-```
-addImplementation
-(
-    toAdd *
-)
-[]
-{
-    result = toAdd[0] + toAdd[1];
-}
-add
-(
-    values <>(int)
-    result int
-)
-[]
-{
-    addImplementation values
-}
-```
-
-To illustrate the second point, consider what would happen if `addImplementation` defined `result`:
-```
-addImplementation
-(
-    toAdd *,
-    result int // <--- result will no longer affect the caller's member.
-)
-[]
-{
-    result = toAdd[0] + toAdd[1];
-}
-```
-By moving the `result` variable closer to its use in `addImplementation`, we more rigorously define what `addImplementation` can do and thus must treat it differently. `add` must become:
-```
-add
-(
-    values <>()
-    result int
-)
-[]
-{
-    result = addImplementation(values).result
-}
-```
-
-### Function Arguments
-Symbol resolution is more strict in function arguments, i.e. `(name = value)`. Here, `name` must exist on the object's Surface.
-
-### Type Blocks
-In Type blocks `<>`, the names used must be valid, predefined objects of the single expected type. 
-For all objects besides Plasmids, the expected type is a Transcription Factor. For Plasmids, the expected type is another Plasmid.
-
-When declaring both Plasmids and Transcription Factors, the Type block specifies the object's dependencies but has no direct effect on the object. When a dependency is declared in a Plasmid, it only signifies that some of the Transcription Factors the Plasmid defines are dependent on those from the specified Plasmid. When a dependency is declared in a Transcription Factor, not only does the dependency have to be declared first, the dependency's execution block is copied into the top of the dependent Transcription Factor's.
-
-Because symbols may only be redefined within a more specific context, global declarations of Plasmids and Transcription Factors will always generate errors if a Symbol is duplicated. This is preferred.
-
-
-## Simple Neuron Example
-An example of a Neuron could be:
-```
-MyNeuron /*A Neuron with gain control*/ <neuron>
-(input int, output int) [gain int = 1]
-{
-    output = gain * input;
-}
-```
-Here, we start the definition of `MyNeuron` with a comment block (`/**/`). This acts as the documentation for the object. Note that newline characters are only ever interpreted in strings and comment blocks, so you can have whatever fancy documentation you'd like. Other than strings and comments, newlines and all other whitespace is mostly irrelevant (more on that later). This allows us to put spaces and even newlines in our blocks.  
-Next, we specify the `neuron` Transcription Factor (TF). This tf will make what would otherwise be a `Cell` (`symbol<>()[]{}`) into a `Neuron` with the ability to receive and send signals.   
-We then add 2 publicly accessible members, `input int` and `output int`. These are built-in `int` types but could be whatever we want. After defining our publicly available Surfaces, we define a private member `gain int` and set the default value to 1. Because `gain` is in square brackets (`[]`), it will not be accessible anywhere outside the execution block (`{}`) of our `MyNeuron`, except in rare cases (such as with TFs, more on that later).  
-Lastly, we define the execution block on a new line and with indents. However, the indentation and white space do not matter. Notice the line ending used in the execution block: `;`. These line endings are only needed to separate executed expressions from each other and are unnecessary when defining symbols, hence no line ending after we complete our `MyNeuron` definition.
-
-## Simple Synapse Example
-Now, let's create a Synapse to connect to our Neuron:
-```
-MySynapse <synapse>
-/**
- * This synapse moves the outputs of one MyNeuron into the inputs of another. 
- */
-[
-    passthrough int
-]
-{
-    //upstream is a magic value that is provided in the first execution block of a Synapse.
-    passthrough = upstream.output;
-}
-{
-    //downstream is a similar magic value provided in the last execution block.
-    downstream.input = passthrough;
-}
-```
-We've done a few things differently here. Notice that we changed the position of the comment block to be after the TFs. This is valid; blocks may appear in any order. The caveat to that is that Synapses have duplicated blocks and the first one to appear is always provided the `upstream` value containing the source Neuron while the last is always provided the `downstream` value containing the target neuron.
-
-Notice also that we use the `.` for member access and that we are accessing Surfaces of the provided variables. All variables are passed by reference and the `.` is the only member access specifier.
-
-We can now use this Synapse with our connection notation: `SourceNeuron --- Synapse ---> TargetNeuron`.
-Here's how that could look:
-```
-source MyNeuron --- MySynapse ---> target MyNeuron
-```
-Alternatively, we can declare our variables ahead of time:
-```
-main
-(
-    source MyNeuron,
-    target MyNeuron,
-    synapse MySynapse
-)
-{
-    synapse --- SomeOtherSynapse ---> source
-    source --- synapse ---> target
-    source --- synapse2 ---> target
-    source --- synapse3 ---> target
-}
-```
-Alternatively, if we wanted to define our Synapse only using TFs, we could:
-```
-main
-(
-    source MyNeuron,
-    target MyNeuron
-)
-{
-    source ---
-        []{}{}
-        <
-            all,
-            of,
-            these,
-            //but,
-            //not these
-            transcription,
-            factors
-        >
-    ---> target
-}
-```
-Here, the Synapse declaration is a Type Expression.
-
-## Asynchronous Cellular Structures and Event Dispatch
-Most execution blocks, such as Proteins, Transcription Factors, and Plasmids run synchronously and immediately in the thread in which they are called.
-
-All Cellular Structures (i.e. `<>()[]{}`) execute their `{}` on a clock. The speed of their oscillation may be set with the built-in value `interval` in milliseconds (e.g. `MyCell<>()[]{interval ++;}`, which would make `MyCell` call its `{}` 1ms slower every time it's called). Cellular Structures do not always run in separate threads. It may be useful to have a Cellular Structure, like a tissue, contain other Cellular Structures and have their oscillations run in a single thread. Other times you may want maximum parallelism which can be accomplished by calling the built-in `fork()` function. All `fork()` does is move the Cellular Structure to a new thread. Note that you can just say `MyCell fork;`, which will expand to `MyCell.fork();`
-
-Synapses are used to send data between asynchronous Cellular Structures. When a Neuron Fires (e.g. `MyNeuron exciteTrigger` is true), all `outgoingSynapses` execute their `upstream` blocks in the calling thread, then execute their `downstream` blocks in the thread they connect to. Synapses may store data Internally inorder to modify the signal sent including changing whether or not the signal is transmitted to the target at all. A Neuron firing event causes Synapses process all `upstream` execution blocks first, then all `downstream` execution blocks.
-
-The `--- Synapse --->` (and thus `<--- Synapse --->` and `<--- Synapse ---`) method, which adds an outgoing connection from the source and an incoming connection to the target may be overridden with the following methods:
-```
-MyCustomClass
-<>
-(
-    //Override outgoing functionality for all Synapses
-    --- (outgoing <>[]{}{})[]
-    {
-        //YOUR CODE HERE
+        ++.index # or index ++()
+        index == (array size - 1) ? {@@}
     }
+}
+
+pair <>
+(
+    name <string>
+    value <int>
     
-    //Override incoming functionality for all Synapses
-    <--- (incoming <>[]{}{})[]
-    {
-        //YOUR CODE HERE
-    }
+    int <value> # Type Conversion (for predefined '>' operation)
 )
-[]
-{}
-```
-
-This allows you to define custom overrides for your specific types as well:
-```
-MySynapse <>
-[
-    //by defining members, we change the shape of the type, making it possible to target only the classes we want.
-    custom string
-]
-{
-    //...
-}
-{
-    //...
-}
-
-MyOtherNeuron
-<>
-(
-    //Override outgoing functionality only for MySynapse
-    --- (outgoing MySynapse)[]
-    {
-        //YOUR CODE HERE
-    }
-    
-    //Override incoming functionality only for MySynapse
-    <--- (incoming MySynapse)[]
-    {
-        //YOUR CODE HERE
-    }
-)
-[]
-{}
-```
-
-### Rounding Error Protection
-When a value is accessed by a Synapse through `upstream` or `downstream`, the value is marked as a Neurotransmitter and will be Reset() by the Biology framework every time the number of Synapses affecting the value drops to 0.
-
-## Type Expressions
-Type Expressions can be substituted for full types the same way defined symbols can be treated as types.
-Saying `var MyNeuron` is just as valid as saying `var <neuron>(input int, output int) [gain int = 1]{output = gain * input;}`. These expressions are in fact identical. The only time you need to explicitly define the symbol name is if you are going to use it later.
-Consider the above example:
-```
-source MyNeuron --- MySynapse ---> target MyNeuron
-```
-Since we have no need to modify `MySynapse` after we create it, we do not have to give the `MySynapse` type a name.
-
-When declaring a type for the purposes of type-matching, the `<>`, `[]`, and `()` blocks may be left empty, as they are not needed to check if an object has the necessary Surfaces. Thus the following is valid:
-```
-doSomethingWith(myNeuron (input int, output int)<>[]{})
-[]
-{
-    myNeuron.input = 5;
-}
-
-main(myNeuron MyNeuron)
-{
-    doSomethingWith(myNeuron);
-}
-```
-Even though `MyNeuron` is `<neuron> (input int, output int) [gain int = 1] {output = gain * input;}`, it can be used anywhere `(input int, output int)<>[]{}` can. It doesn't matter if the `neuron` Transcription Factor adds or changes members, as long as the type used with `doSomethingWith` is `()<>[]{}` and defines the `input int` and `output int` Surfaces, it's valid.
-
-Aside: All types must have names.
-
-### Type Perturbation
-Type Expressions may be modified ad nauseam using the `&...` syntax where `...` is any block besides strings (`&""` is only used for file inclusion). You are also allowed to join types together by symbol.
-
-For example, we can define an `InputNeuron` and an `OutputNeuron` which combine to form `MyNeuron`. Using Type Perturbation, we can do this without Transcription Factors:
-```
-InputNeuron <neuron>
-/*
-    A Neuron with an input
-*/
-(
-    input int
-)
-[]
-{}
-
-OutputNeuron <neuron>
-/*
-    A Neuron with an output
-*/
-(
-    output int
-)
-[]
-{}
-
-MyNeuron InputNeuron &OutputNeuron &
-/*
-    A Neuron with gain control
-*/
-//NOTE: No () block even though MyNeuron is a <>()[]{}
-[
-    gain int = 1
-]
-{
-    //output from OutputNeuron.
-    output = gain * input;
-}
-```
-
-How the Type Perturbation mechanic works is by combining the contents of duplicate blocks on a first-in first-out bases and then removing duplicates from the end.
-
-Our `MyNeuron` thus has an intermediate state similar to the following:
-```
-MyNeuron 
-<
-    neuron, //from InputNeuron
-    neuron //from OutputNeuron; this one will be removed.
->
-/*
-    A Neuron with an input
-    A Neuron with an output
-    A Neuron with gain control
-*/
-(
-    input int,
-    output int
-)
-[
-    gain int = 1
-]
-{
-    //output from OutputNeuron.
-    output = gain * input;
-}
-```
-
-This is useful when you want to build onto a type that was previously defined elsewhere without using Transcription Factors.
-
-Type Perturbations do not afford any changing of variables; you will necessarily need to use Transcription Factors for that.
-
-Additionally, Type Perturbations get more confusing when duplicate blocks exist in the type definition, such as with Synapses (`<>[]{}{}`). In order to add to the second `{}`, you must provide 2 `{}` blocks: `PerturbedSynapse MySynapse &{}{/*added to downstream block*/}` vs `PerturbedSynapse MySynapse &{/*only added to upstream block*/}`.
-
-Type Perturbation only moves in one direction: toward complexity. You cannot directly simplify objects by Perturbing them (but you can indirectly by adding on a Transcription Factor which simplifies the object).
-
-## Meta Programming and Inheritance
-There is no inheritance in Native Biology Code. This might be surprising considering how much inheritance is (ab)used in the C++ code underpinning the language. We believe it is cleaner and less error-prone to use a simple meta-programming along with native code rearrangement through self-reflection.
-
-Transcription Factors may perform arbitrary changes to the data structures they are applied to.
-For example:
-```
-symbol <dependencies> 
-{
-    object.newSurface string;
-    object.[].newVar int;
-    object.existingSurface.[].internalValue = 4;
-    object.{} += someExecutionStatement(newVar, newSurface);
-    object.{}.someOtherFunction = (same type, of args)[but with, also these]{and(same, but, also, "modified functionality");};
-}
-```
-TFs use the same kind of magic variables that Synapse uses: our `object` here is provided to a TF so that it may affect whatever it is applied to.
-TFs have access to all parts of all objects which may be reached through this provided `object`. This is accomplished through the `genetic::` `Localization` and `Insertion` mechanics.
-In this example, `object.newSurface string;` creates a new `Surface` (i.e. `()`) called `newSurface` which is of type `string`. We don't need to specify `object.().newSurface`, as we do with the Internal (i.e. `[]`) variable `newVar`. This is because members are exposed (i.e. public) by default and by specifying `object.[]`  only when making members Internal (i.e. private), we save ourselves some work.
-`object.existingSurface.[].internalValue = 4;` shows how TFs have the ability to modify ANY Internal value they can access, not just those of `object`.
-The line `object.{} += someExecutionStatement(newVar, newSurface);` appends a new execution statement to whatever object already had in its execution block (i.e. `{}`).
-The last line of this example uses the syntax `object.{}.someOtherFunction ...` which addresses all instances of `someOtherFunction` within the object's execution block. This does not affect `someOtherFunction` in any other object.
-
-You are also allowed to modify comments and strings through these same mechanics. `object./**/ += "New documentation";` is valid.
-
-You may remove a line-item from an object using the built-in `__remove()` method.
-For expample:
-* `object.__remove(symbol)`
-* `object.[].__remove(symbol)`
-* `object.{}.__remove(expression)`
-* `object.subobject.[].__remove(symbol)`
-
-### Composition
-The easiest way to reuse the code you've written is through composition. Let's take the `someOtherFunction` example from above and assume you wrote:
-```
-MyModifiedFunction
-(
-    same type,
-    of args
-)
-[
-    but with,
-    also these
-]
-{
-    and(same, but, also, "modified functionality");
-}
-```
-You could then create a TF wrapper to enable code reuse with the following:
-```
-modifyFunctionality <>
-{
-    object.{}.someOtherFunction = MyModifiedFunction;
-}
-```
-BAM! Done. Now you can `<modifyFunctionality>` wherever you want!
-
-### Inheritance
-A traditional inheritance style Transcription Factor interface requires a bit more work to build.
-Consider:
-```
-Animal<>(legs int = 0, makeNoise ()[]{print("NOT IMPLEMENTED";})[]{} //pretend print()[]{} was defined beforehand  
-Cat<>(legs int = 4, makeNoise ()[]{print("Meow";})[]{}
-```
-While you can use `Cat` anywhere you can use `Animal` (and vice versa, in this case), making `Cat` effectively an `Animal`, we shouldn't be duplicating code.
-Let's simplify this:
-```
-AnmialTF<>
-{
-    object.legs int = 0;
-    object.noise string = "NOT IMPLEMENTED";
-    object.makeNoise = ()[]{print(noise);};
-}
-CatTF< AnimalTF >
-{
-    object.legs = 4;
-    object.noise = "Meow";
-}
 
 main
 (
-    cat < CatTF > ()[]{}
-)
-{
-    cat.makeNoise();
-}
-```
-Now, we can define any number of Animals through Transcription Factor dependencies and any change in the `AnimalTF` "base class" will be applied to all Animals.
-
-### Meta Meta
-Let's talk a little bit about how the above inheritance system actually works. When a Transcription Factor has a dependency, that dependency is loaded before the execution block. Thus, the above example of:
-```
-CatTF< AnimalTF >
-{
-    object.legs = 4;
-    object.noise = "Meow";
-}
-```
-expands to:
-```
-CatTF<>
-{
-    //From AnimalTF
-    object.legs int = 0;
-    object.noise string = "NOT IMPLEMENTED";
-    object.makeNoise = ()[]{print(noise);};
-    
-    //From CatTF
-    object.legs = 4;
-    object.noise = "Meow";
-}
-```
-
-We could further expand on this with:
-```
-KittenTF<CatTF>{object.noise = "mew";}
-```
-which would expand to:
-```
-KittenTF<>
-{
-    //From AnimalTF
-    object.legs int = 0;
-    object.noise string = "NOT IMPLEMENTED";
-    object.makeNoise = ()[]{print(noise);};
-    
-    //From CatTF
-    object.legs = 4;
-    object.noise = "Meow";
-    
-    //From KittenTF
-    object.noise = "mew";
-}
-```
-
-This code is executed in order, as expected. No tricks.
-If we redefine `AnimalTF` to end with the following line: `object.makeNoise()` and write:
-```
-kitten <KittenTF>()[]{}
-kitten.makeNoise();
-```
-We would get:
-```
-print("NOT IMPLEMENTED);
-print("mew);
-```
-Since the expanded code would be:
-```
-KittenTF<>
-{
-    //From AnimalTF
-    object.legs int = 0;
-    object.noise string = "NOT IMPLEMENTED";
-    object.makeNoise = ()[]{print(noise);};
-    object.makeNoise(); // <--- THE LINE WE ADDED
-    
-    //From CatTF
-    object.legs = 4;
-    object.noise = "Meow";
-    
-    //From KittenTF
-    object.noise = "mew";
-}
-
-main
-(
-    kitten <KittenTF>()[]{}
-)
-{
-    kitten.makeNoise();
-}
-```
-
-## Initialization
-There are several means by which you might create a constructor. Destructors do not exist in Native Biology Code but can likewise be accomplished by having a caller call some destructor method.
-
-The easiest way to create a constructor is simply define a TF for your class.
-For example, we can break the above example of `AnimalTF`'s call to `makeNoise()` into 2 TFs: a static initialization and functional initialization:
-```
-Anmial<>
-{
-    object.legs int = 0;
-    object.noise string = "NOT IMPLEMENTED";
-    object.makeNoise = ()[]{print(noise);};
-}
-AnmialConstructor<>
-{
-    object.makeNoise();
-}
-
-Cat< Animal >
-{ 
-    object.legs = 4;
-    object.noise = "Meow";
-}
-CatConstructor< AnimalConstructor > {}
-
-Cat< Animal >
-{ 
-    object.legs = 4;
-    object.noise = "Meow";
-}
-CatConstructor< AnimalConstructor > {}
-
-Kitten< Cat >
-{ 
-    object.noise = "mew";
-}
-KittenConstructor< CatConstructor > {}
-```
-Now, `kitten < Kitten, KittenConstructor >()[]{}` expands to:
-```
-kitten
-<
-    //From Animal
-    object.legs int = 0;
-    object.noise string = "NOT IMPLEMENTED";
-    object.makeNoise = ()[]{print(noise);};
-    
-    //From Cat
-    object.legs = 4;
-    object.noise = "Meow";
-    
-    //From Kitten
-    object.noise = "mew";
-    
-    //From AnimalConstructor
-   object.makeNoise();
-   
-   //From CatConstructor
-   
-   //From KittenConstructor
->()[]{}
-```
-Which prints the expected "mew".
-
-Another way we can create a constructor or destructor is through a Surface definition.
-We can say:
-```
-main
-(
-    kitten < Kitten >
-    (
-        constructor ()[]
-        {
-            makeNoise()
-        },
-        destructor ()[]
-        {
-            explode()
-        }
-    )
-    [
-        explode ()[]
-        {
-            print("BOOM!");
-        }
+    heterogeneosu_map <some_kind.map> = [
+        var1 <pair>('One', 1)
+        var3 <pair>('Three', 3)
+        var4 <int>(4)
+        var2 <pair>('Two', 2)
     ]
-    {}
 )
 {
-    kitten.consturctor();
-    kitten.destructor();
+    sort(heterogeneosu_map);
 }
 ```
-Now, the caller can construct and destruct our `kitten`.
-
-### Meta Initialization
-While all variables must be declared on the Surface or Internally before they are used in an execution block, you can use execution statements to declare variables.
-This is valid:
+This will result in `heterogeneosu_map` being rearranged as:
 ```
-MyCell<>
-(
-    GetSurfaceFor("MyCell").name GetSurfaceFor("MyCell").type = GetSurfaceFor("MyCell").value  
-)
-[]
-{}
-```
-
-Note that we cannot include spaces in expressions used in declaration blocks, so `GetSurfaceFor "MyCell" GetSurfaceFor "MyCell" = GetSurfaceFor "MyCell"` is invalid and will generate an error.
-
-## Type Conversion and Casting
-A type may be treated as another type if it defines the target type on its Surface.
-For example:
-```
-InventoryNumber<>
-(
-    int trakingId
-)
 [
-    trackingId int
+    var1 <pair>('One', 1)
+    var2 <pair>('Two', 2)
+    var3 <pair>('Three', 3)
+    var4 <int>(4)
 ]
-{}
 ```
-When a function like `1 + InventoryNumber` is called, the expression is interpreted as `1.+(InventoryNumber.int)`, since `1`, being an `int` expects an `int` in its `+` method. `InventoryNumber.int` then produces `InventoryNumber.trackingId`.
-This works for any type.
-```
-Package< SomePackageImplementation >[](){}
-
-TrackPackage(trackingId int, result Position)[track SomePackageTrackingImplementation]{result = track(trackingId).result;}
-
-GetPackage(Position where, result Package)[get SomePositionLookupImplementation]{result = get(position).result;}
-
-InventoryNumber<>
-(
-    int trakingId,
-    Position TrackPackage(trackingId).position,
-    Package GetPackage(Position).result
-)
-[
-    trackingId int
-]
-{}
-```
-Now, our `InventoryNumber` can be treated directly as a `Position` and even passed in place of a `TrackPackage` function call (i.e. `InventoryNumber(someInt).result` discards the provided int and provides its own `Position` as the `result`).
-Note that `Position`, when used in the type expression defining `Package` references the `Position` Surface of `InventoryNumber` and not the `Position` type. If an object does not define a symbol and that symbol can't be found on the Surfaces of containing objects, it is an error. Thus, we cannot say `Package GetPackage(GetPackage).result` because `InventoryType` cannot be treated as a `GetPackage` Protein.
+This works on `heterogeneosu_map` with a mixture of pairs and int(s) just as it would on any data which can be represented as an array of ints. Note that the int requirement only exists because of the `>.int(int)` call, which only takes ints. If we had a map consisting of custom types which implemented `>(other <custom_type>){}`, this would work just as well.
