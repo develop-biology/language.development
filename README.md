@@ -13,9 +13,9 @@ We believe that the syntax for iterating over memory addresses in an embedded sy
 ## How
 The Eons Language of Development is the emulsifier between the practical applications developed on the [Eons Python Library](https://github.com/eons-dev/lib_eons) and the powerful, but largely theoretical concepts created by the [Eons Develop Biology library](https://github.com/develop-biology/lib_bio). We also draw on years of experience managing semantically sparse data across several scientific disciplines.
 
- The Develop Biology Library (aka Biology) provides the basics for creating a directed, recursive hypergraph. In short, this means data of any dimension ("hyper") flows ("directed") through a network ("graph") of connected nodes, where each connection and node may be graphs unto themselves ("recursive").
+The Develop Biology Library (aka Biology) provides the basics for creating a directed, recursive hypergraph. In short, this means data of any dimension ("hyper") flows ("directed") through a network ("graph") of connected nodes, where each connection and node may be graphs unto themselves ("recursive").
 
- The Eons Python Framework extends this directed, recursive hypergraph by simplifying the numerous classes in Biology into a single Functor and wrapping the complexities of Biology's myriad context frameworks into a single system of [Implicit Inheritance](https://github.com/eons-dev/lib_eons#implicit-inheritance).
+The Eons Python Framework extends this directed, recursive hypergraph by simplifying the numerous classes in Biology into a single Functor and wrapping the complexities of Biology's myriad context frameworks into a single system of [Implicit Inheritance](https://github.com/eons-dev/lib_eons#implicit-inheritance).
 
 Through the combination of these frameworks, we can blur the lines of what it means 'to be', 'to have', and 'to do': Biologically Bonding Atoms makes it so that "having" relationships defines who you are (the same way a molecule is defined by its constituent atoms), and when everything is a Functor, what you are determines what you do and vice versa.
 
@@ -206,7 +206,7 @@ The Operators used are:
 * `&` - And
 * `|` - Or
 
-The space is a dynamic Operator that is filled in depending on the context of where it is found. See the [Spacing Autofill rules](#spacing-autofill), below.
+The space is a dynamic Operator that is filled in depending on the context of where it is found. See the [Spacing Autofill rules](#spacing-autofill) below.
 
 Besides those for Blocks, these are the only characters used by the Eons Language of Development. All other symbols (e.g. `+`, `-`, `*`, `/`, `%`, etc.) are all user defined and can be changed as thou wilt.
 
@@ -227,12 +227,12 @@ It is not valid to Exit with multiple, unnamed args; if you wish to return a tup
 ('@' is usually called 'at').
 
 #### The Double Exit Operator
-Where `@` means `return`, `@@` means `break`. The idea is that the more work that has to go into typing a statement, the less powerful the statement becomes. So. `@@`, being more work to type than `@`, will only exit the current Execution Block if that Block is a control flow statement and not the Execution Block belonging to a Functor. See [Control Flow](#control-flow), below, for more info.
+Where `@` means `return`, `@@` means `break`. The idea is that the more work that has to go into typing a statement, the less powerful the statement becomes. So, `@@`, being more work to type than `@`, will only exit the current Execution Block if that Block is a control flow statement and not the Execution Block belonging to a Functor. See [Control Flow](#control-flow) below for more info.
 
 ### Escaping
 Still use `\` to escape other characters.
 
-**You should only ever need to escape characters within a string** (e.g. `my_\n_var` is not a valid variable name). Because String Blocks are non-coding, this is fine. 
+**You should only ever need to escape characters within a string** (e.g. `my_\n_var` is not a valid variable name). Because String Blocks are non-coding, this is fine.
 
 ### Line Endings and Code Separation
 Code may be separated by any End Operator. All are equally valid in all contexts, except the newline End (`\n`), which may be used to terminate Comment Blocks.
@@ -365,7 +365,7 @@ Here, `first` and `second` are copied by value and will remain a part of the `ad
 This also applies to Sequences: `:reusable/$new`.
 
 #### Garbage Collection
-When an object has no references, it is deleted.  
+When an object has no references, it is deleted.
 
 #### Accessing the Current and Calling Objects
 Other languages use `this` or `self` to indicate the current object. The Eons Language of Development uses a standalone `$`.
@@ -389,7 +389,7 @@ You cannot change the `<>` nor `{}` without redefining the symbol!
 
 This means `my_class()` will execute the `my_class` symbol defined elsewhere. Whereas, `my_class<>()` is a declaration and will not execute any code. The same is true for `my_function()` vs `my_function(){}`. Note as well that `my_class(){}` and `my_function<>()` are valid declarations (you can use this when combining functions, e.g. `combined_function<do_first, do_second>(extra_arg<>)`).
 
-However, both `<` and `>` may be used in evaluated expressions as comparisons. The difference between the Type Block and the less than & greater than symbols is that the latter are always followed by `?`, `&`, or `|`. 
+However, both `<` and `>` may be used in evaluated expressions as comparisons. The difference between the Type Block and the less than & greater than symbols is that the latter are always followed by `?`, `&`, or `|`.
 
 **It if forbidden to declare or change types in a comparison statement**. That's how we solve that problem.
 
@@ -397,7 +397,7 @@ However, both `<` and `>` may be used in evaluated expressions as comparisons. T
 If an expression lacks `<>` or `{}`, it will be executed (e.g. `function_call()` or `function_call` vs `function_declaration(){}`).
 All executed statements (i.e. those within a `{}`) must be separated by a valid line ending (`,`, `;`, or `\n`).
 
-Redefining a symbol changes the existing symbol for all future execution. Meaning, `symbol symbol{do_this_instead}` will change the behavior of `symbol`. However, `symbol symbol`, without a Type nor Execution Block will be executed per the Spacing Autofill rules below.
+Redefining a symbol changes the existing symbol for all future execution. Meaning, `symbol symbol{do_this_instead}` will change the behavior of `symbol`. However, `symbol symbol` without a Type nor Execution Block will be executed per the Spacing Autofill rules below.
 
 ### Spacing Autofill
 These rules apply to any set of symbols separated by spaces:
@@ -451,7 +451,7 @@ This line calls ship(int.some_item), which returns the tracking_id from the inve
 ```
 
 ## Control Flow
-There are 3 forms of control flow available in Eons Language of Development: 
+There are 3 forms of control flow available in Eons Language of Development:
 * `if` & `if else` statements
 * `foreach` loop
 * `while` loop
@@ -464,7 +464,7 @@ Note that the `?` will always cast the preceding statement to `bool`. It is an e
 There are no `else if` or `elif` statements at this time.
 
 The `while` loop is defined as `(...){}`, where `...` is the condition to run the loop again. Like `if` statements, `while` loops will cast their condition to `bool`.
-To exit a while loop, use the Double Exit Operator (`@@`). You may also return a value from a `while` loop with `@(var_to_return)`. Keep in mind that this does not exit the Execution Block which started the loop. You must still 
+To exit a while loop, use the Double Exit Operator (`@@`). You may also return a value from a `while` loop with `@(var_to_return)`. Keep in mind that this does not exit the Execution Block which started the loop. You must still
 
 The `foreach` loop is defined as `container[iterator]{action}`, where `container` is the Container to iterate over (previously defined by `[some, set]`) and  `iterator` is the symbol to use within `action` to represent the current item in the `container`. To enable type checking in a foreach loop, simply specify a Type Block after the iterator name.
 For example,
@@ -627,4 +627,3 @@ This will result in `heterogeneosu_map` being rearranged as:
 ]
 ```
 This works on `heterogeneosu_map` with a mixture of pairs and int(s) just as it would on any data which can be represented as an array of ints. Note that the int requirement only exists because of the `>.int(int)` call, which only takes ints. If we had a map consisting of custom types which implemented `>(other <custom_type>){}`, this would work just as well.
-
