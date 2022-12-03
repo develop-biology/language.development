@@ -271,6 +271,20 @@ my_class<>
 
 Spatial separation also applies to competing parent scopes. Say you have a class which 'inherits' from `parent1` and `parent2`. If both parents define `some_var`, you can access each parent's value with `some_var.parent1` and `some_var.parent2`, respectively. If no greater domain is suffixed to `some_var`, it would be an error. However, if you define `some_var` in your class and then use the variable without a suffix, it will default to `some_var.$`, since `$` would be the 'closest', 'spatial' scope to where the variable is used.
 
+#### Beyond the IDE
+This system of spatial separation is intended to scale beyond code and be applicable to all forms of organization. However, you may encounter some ambiguity when the objects you reference do not have an explicit list of members.
+
+When naming documents, for example, we often pick names based on an implied, not explicit, structure. Even with a directory, `team.department.organization.company` is often just a generally agreed upon idea which won't throw errors if used incorrectly.
+
+If you're ever confused about which side of a variable string to append to, go by this rule of thumb:  
+**Members** add to the **left**  
+**Types** add to the **right**  
+
+So, `really.long.name`, could become `specific.issue.really.long.name.document.form`, where `specific` and `issue` are both "members" and `specific` is a nested sub-member of `issue...`, which is a nested sub-member of `really...`, etc. This logic continues all the way to the right, where `document` is a nested sub-member of `form`. Inversely, from the left, `form` and `document` are both types. In this case, `...document`, is a type of `form`, and `...name` is a type of `document`, etc. all the way to `specific` being a type of `issue`.
+You'll see this pattern arise as a datum grows to encompass a larger scope. You might get `another.issue.really.long.name.spreadsheet`, etc.
+
+It is an intended result of this nomenclature that the salient information be found at the ends of a fully resolved symbol.
+
 #### TODO: Implicit Spatial Scopes
 Eons Python Library allows you to specify the precedence of spatial scopes with Fetch. That behavior needs to be ported to Biology.
 
@@ -577,7 +591,7 @@ sort
             array[index + 1] = buffer   
         }
         
-        index ++ # note the space after 'index', making the expression expand to ++.index().
+        ++.index # or index ++()
         index == (array size - 1) ? {@@}
     }
 }
