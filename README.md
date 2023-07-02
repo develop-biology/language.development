@@ -172,7 +172,7 @@ parent1<>
 ```
 and
 ```
-parent2<>
+parent2 <>
 (
     member2 <>
 )
@@ -182,7 +182,7 @@ parent2<>
 ```
 our child from above would be the same as:
 ```
-child<>
+child <>
 (
     member1 <>
     member2 <>
@@ -565,7 +565,7 @@ sort
         index <int>
         buffer <> # we want buffer to be any type, so we mark it as '<>'
     )
-
+)
 {
     array size <= 1 ? {@}
     
@@ -606,7 +606,7 @@ pair <>
 
 main
 (
-    heterogeneosu_map <some_kind.map> = [
+    heterogeneous_map <some_kind.map> = [
         var1 <pair>('One', 1)
         var3 <pair>('Three', 3)
         var4 <int>(4)
@@ -614,10 +614,10 @@ main
     ]
 )
 {
-    sort(heterogeneosu_map);
+    sort(heterogeneous_map);
 }
 ```
-This will result in `heterogeneosu_map` being rearranged as:
+This will result in `heterogeneous_map` being rearranged as:
 ```
 [
     var1 <pair>('One', 1)
@@ -626,4 +626,4 @@ This will result in `heterogeneosu_map` being rearranged as:
     var4 <int>(4)
 ]
 ```
-This works on `heterogeneosu_map` with a mixture of pairs and int(s) just as it would on any data which can be represented as an array of ints. Note that the int requirement only exists because of the `>.int(int)` call, which only takes ints. If we had a map consisting of custom types which implemented `>(other <custom_type>){}`, this would work just as well.
+This works on `heterogeneous_map` with a mixture of pairs and int(s) just as it would on any data which can be represented as an array of ints. Note that the int requirement only exists because of the `>.int(int)` call, which only takes ints. If we had a map consisting of custom types which implemented `>(other <custom_type>){}`, this would work just as well.
