@@ -1,5 +1,8 @@
 # Eons Language of Development
 
+**THIS PAGE IS DEPRECATED**  
+For the latest, see our work on Elderlang: https://github.com/elderlang/elderlang
+
 This repo describes the Eons Language of Development specification and provides interpreters where appropriate.
 This spec supersedes all other naming conventions of Eons.
 
